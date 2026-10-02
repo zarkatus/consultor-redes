@@ -26,9 +26,9 @@ begin
     '<p>O vigia diário do Consultor de Redes não deixou registro em <code>ic_aviso_log</code> (canal '
     || '<code>redes_vigia</code>) nas últimas 30 h.</p><p><b>Valor observado:</b> último registro em '
     || coalesce(to_char(v_ultimo at time zone 'America/Sao_Paulo', 'DD/MM/YYYY HH24:MI'), 'nunca') || ' (BRT), há '
-    || coalesce(v_horas::text, '?') || ' h.</p><p><b>Ação:</b> abrir o GitHub Actions do innconta-site, workflow '
+    || coalesce(v_horas::text, '?') || ' h.</p><p><b>Ação:</b> abrir o GitHub Actions do consultor-redes, workflow '
     || '"Consultor de redes": se não há run "vigia" desde então, o agendador do GitHub pulou o disparo; rodar à mão '
-    || '(<code>gh workflow run redes-consultor.yml -R zarkatus/innconta-site -f tarefa=vigia</code>). Se há run vermelho, '
+    || '(<code>gh workflow run redes-consultor.yml -R zarkatus/consultor-redes -f tarefa=vigia</code>). Se há run vermelho, '
     || 'ler o log do passo "Vigiar".</p>');
   insert into public.ic_aviso_log (fone, marca, entregue, veredito, texto, canal)
   values ('', 'consultor-redes', v_envio is not null,

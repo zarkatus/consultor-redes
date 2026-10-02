@@ -9,7 +9,7 @@
 --   * PORTEIRO NO BANCO: `publicar` só aciona o executor quando há peça 'aprovado', sem publicado_em, com data <= hoje
 --     (mesma consulta do job porteiro). Dia sem peça devida = 0 minuto (antes: 10 runs/dia do porteiro).
 --   * Credenciais: vault `github_pat_redes_dispatch` (PAT fine-grained: só Actions RW + Metadata R em
---     zarkatus/innconta-site, expira 29/09/2027) e `gitlab_trigger_redes` (trigger token do projeto 86647895: só dispara
+--     zarkatus/innconta-site + zarkatus/consultor-redes desde 02/10/2026, expira 29/09/2027) e `gitlab_trigger_redes` (trigger token do projeto 86647895: só dispara
 --     pipeline). Cofre: github-pat-redes-dispatch.txt, gitlab-trigger-redes.txt (INVENTARIO.md).
 --   * RESERVA AUTOMÁTICA NO GITLAB (escopo do .gitlab-ci.yml: publicar, conselho_diario, metricas): `redes_disparo_conferir`
 --     (a cada 10 min) acompanha cada disparo em 3 fases, porque o pg_net é assíncrono:
@@ -108,7 +108,7 @@ begin
   v_inputs := jsonb_build_object('tarefa', p_tarefa, 'origem', 'pg_cron');
   if coalesce(p_opcoes, '') <> '' then v_inputs := v_inputs || jsonb_build_object('vigia_opcoes', p_opcoes); end if;
   select net.http_post(
-    url := 'https://api.github.com/repos/zarkatus/innconta-site/actions/workflows/redes-consultor.yml/dispatches',
+    url := 'https://api.github.com/repos/zarkatus/consultor-redes/actions/workflows/redes-consultor.yml/dispatches',
     body := jsonb_build_object('ref', 'main', 'inputs', v_inputs),
     headers := jsonb_build_object('Authorization', 'Bearer ' || v_pat, 'Accept', 'application/vnd.github+json',
                                   'User-Agent', 'innconta-redes-pgcron', 'Content-Type', 'application/json'),
@@ -198,7 +198,7 @@ begin
       if r.req_runs is null then
         select decrypted_secret into v_pat from vault.decrypted_secrets where name = 'github_pat_redes_dispatch';
         select net.http_get(
-          url := 'https://api.github.com/repos/zarkatus/innconta-site/actions/workflows/redes-consultor.yml/runs?event=workflow_dispatch&per_page=20&created=%3E%3D'
+          url := 'https://api.github.com/repos/zarkatus/consultor-redes/actions/workflows/redes-consultor.yml/runs?event=workflow_dispatch&per_page=20&created=%3E%3D'
                  || to_char((r.quando - interval '2 minutes') at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
           headers := jsonb_build_object('Authorization', 'Bearer ' || v_pat, 'Accept', 'application/vnd.github+json',
                                         'User-Agent', 'innconta-redes-pgcron'),
@@ -258,9 +258,9 @@ begin
       || '<p><b>Ação:</b> '
       || case when v_cred then '401/403 do GitHub é credencial, não queda: o PAT fine-grained <code>github_pat_redes_dispatch</code> '
               || '(vault do banco; cofre <code>github-pat-redes-dispatch.txt</code>) venceu ou foi revogado. Gerar outro com o '
-              || 'MESMO escopo (Actions RW só em zarkatus/innconta-site) e atualizar vault e cofre (PAR-01i). '
+              || 'MESMO escopo (Actions RW só em zarkatus/innconta-site e zarkatus/consultor-redes) e atualizar vault e cofre (PAR-01i). '
          else '' end
-      || 'Tarefa que não rodou: <code>gh workflow run redes-consultor.yml -R zarkatus/innconta-site -f tarefa=&lt;tarefa&gt;</code> '
+      || 'Tarefa que não rodou: <code>gh workflow run redes-consultor.yml -R zarkatus/consultor-redes -f tarefa=&lt;tarefa&gt;</code> '
       || 'ou <code>python redes/reserva_gitlab.py provar &lt;tarefa&gt;</code>. Registro em <code>ic_redes_disparo</code>.</p>');
     insert into public.ic_aviso_log (fone, marca, entregue, veredito, texto, canal)
     values ('', 'consultor-redes', v_envio is not null,
