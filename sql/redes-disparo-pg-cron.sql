@@ -9,7 +9,7 @@
 --   * PORTEIRO NO BANCO: `publicar` só aciona o executor quando há peça 'aprovado', sem publicado_em, com data <= hoje
 --     (mesma consulta do job porteiro). Dia sem peça devida = 0 minuto (antes: 10 runs/dia do porteiro).
 --   * Credenciais: vault `github_pat_redes_dispatch` (PAT fine-grained: só Actions RW + Metadata R em
---     zarkatus/innconta-site + zarkatus/consultor-redes desde 02/10/2026, expira 29/09/2027) e `gitlab_trigger_redes` (trigger token do projeto 86647895: só dispara
+--     zarkatus/innconta-site + zarkatus/consultor-redes desde 02/10/2026, expira 29/09/2027) e `gitlab_trigger_redes` (trigger token do projeto 87183546 = zarkatus-mirror/consultor-redes desde 02/10/2026; antes 86647895: só dispara
 --     pipeline). Cofre: github-pat-redes-dispatch.txt, gitlab-trigger-redes.txt (INVENTARIO.md).
 --   * RESERVA AUTOMÁTICA NO GITLAB (escopo do .gitlab-ci.yml: publicar, conselho_diario, metricas): `redes_disparo_conferir`
 --     (a cada 10 min) acompanha cada disparo em 3 fases, porque o pg_net é assíncrono:
@@ -68,7 +68,7 @@ begin
     return null;
   end if;
   select net.http_post(
-    url := 'https://gitlab.com/api/v4/projects/86647895/trigger/pipeline',
+    url := 'https://gitlab.com/api/v4/projects/87183546/trigger/pipeline',
     body := jsonb_build_object('token', v_tok, 'ref', 'main', 'variables', jsonb_build_object('TAREFA', v_tarefa)),
     headers := jsonb_build_object('Content-Type', 'application/json'),
     timeout_milliseconds := 20000) into v_req;
