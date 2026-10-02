@@ -1,0 +1,406 @@
+# Consultor de Redes InnConta — estende o cron que já existe (mesmo padrão de acompanhamento-semanal.yml),
+# zero infraestrutura nova (CAP-01 intacto). Oito disparos (6 por cron + 2 só por workflow_dispatch):
+#   segunda 07:30 BRT  → lote semanal de aprovação de CONTEÚDO (agora inclui vídeo — renderiza
+#                        as peças de vídeo pendentes e anexa ao mesmo e-mail, PLAYBOOK §7-V)
+#   dia 5, 08:00 BRT   → calendário editorial do mês (aprovação até dia 8)
+#   dia 1, 07:00 BRT   → relatório mensal (mês anterior)
+#   segunda 08:00 BRT  → informe comercial ao Roveda (Diretor Comercial) — SÓ leitura: o que foi
+#                        publicado na semana, o que vem na semana que vem, contatos por origem de
+#                        rede, pendências de direção (PLAYBOOK §7-V, diretriz do CVO 23/09/2026:
+#                        Roveda recebe informe, não publica — substitui o extinto cron ter/qui/sex
+#                        do "kit de 1 clique ao Roveda").
+#   TODO DIA 07:47 e 10:17 BRT → publicar (2 tentativas, idempotente; o agendador atrasa em horas): peças 'aprovado' com data_publicacao <= hoje e ainda não
+#                        publicadas são publicadas pelo canal certo (Instagram/LinkedIn) ou
+#                        marcadas 'aguardando_api' (canal ainda sem conector) — publicar é tarefa
+#                        do consultor, nunca do Roveda. Mudou de "dias úteis" para TODO DIA em
+#                        24/09/2026 (meta de postagem diária no Instagram, calendario-diario-v1);
+#                        a regra pura (`elegivel_para_publicar`) já era só por data, não por dia da
+#                        semana — o guarda de dia útil vivia só neste cron, nunca dentro da função,
+#                        então a mudança é só o cron (PLAYBOOK, guard-horário-dentro-da-função:
+#                        aqui o guard real de "hoje é dia de publicar" sempre foi a presença de uma
+#                        peça com data_publicacao<=hoje, não o dia da semana).
+#   dia 10, 06:00 BRT  → renovar_ig: renova `ic_segredo.ig_access_token` (token de 60 dias da
+#                        API do Instagram) via `graph.instagram.com/refresh_access_token`; roda a
+#                        cada 30 dias, folga de 30 antes do vencimento (PLAYBOOK §7-V-5/
+#                        §23set2026-renovacao). O GitHub Actions não consegue atualizar o próprio
+#                        Secret do repo — por isso o token vivo mora no banco, não em
+#                        IG_ACCESS_TOKEN (esse fica só de fallback). Falha manda e-mail à central
+#                        técnica (AOP-01), nunca à caixa pessoal do CVO.
+#   (sem cron própria) → 'video': só workflow_dispatch, renderiza + manda o lote SÓ com as peças
+#                        de vídeo (--somente-video) — usado para QA/backfill manual, sem esperar
+#                        a segunda-feira.
+#   (sem cron própria) → 'ensaio': só workflow_dispatch, ENSAIO GERAL de todas as peças
+#                        'aprovado' de um mes_ref — faz tudo que 'publicar' faria (sobe mídia,
+#                        cria container real no Instagram, espera FINISHED nos vídeos/Reels)
+#                        EXCETO publicar de verdade (redes/ensaio_geral.py, PLAYBOOK §7-V,
+#                        23/09/2026) — usado como prova antes de qualquer virada de mês real e
+#                        depois de qualquer revisão de conteúdo do estoque.
+#                        Com `peca_id`, ensaia SÓ essa peça direto do estoque (carrossel incluso:
+#                        cria os N contêineres filhos + o pai, sem publicar) — PLAYBOOK §7-V-11.
+#   todo dia 21:20 BRT → conselho_diario: o mesmo conselho do lote, logo depois de a franquia
+#                        gratuita do Workers AI renovar (00:00 UTC) — peça nova ou ADIADA por falta
+#                        de cota não espera a segunda-feira; e-mail de escaladas só se escalou algo.
+#   todo dia 06:00 BRT → conselho_diario, 2ª rodada (09:00 UTC, 3h antes do publicar das 09:00 BRT):
+#                        rede de segurança se a das 21:20 falhar por cota, erro de modelo ou timeout.
+#                        Idempotente (peça já decidida é pulada sem gastar modelo; 'adiado' e
+#                        sem-decisão são reavaliadas; `prioridade: urgente` vai primeiro nas duas).
+#                        Mesmo dia UTC da 1ª = mesmo teto de 6.500 neurônios (não renova a franquia).
+#   (sem cron própria) → 'conselho': workflow_dispatch. Com `lote_json` = modo AVALIAÇÃO
+#                        (redes/conselho/conselho.py --avaliar: lê peças de um JSON do repo, grava os
+#                        votos com peca_id `qa-conselho-*`, não toca publicação nem estoque); sem
+#                        `lote_json` = o mesmo conselho do lote semanal (lote_aprovacao.py).
+# CONSELHO EDITORIAL (23/09/2026, PLAYBOOK §7-V-10): o lote de segunda deixou de mandar link de
+# aprovação ao CVO — 5 revisores automáticos (Cloudflare Workers AI, franquia gratuita, teto próprio
+# de neurônios) + redator decidem; o CVO recebe só as ESCALADAS (lote) e o RESUMO depois do fato
+# (informe de segunda). GitHub Models (plano original) foi aposentado em 30/07/2026 — por isso não
+# há `permissions: models: read` aqui.
+# ROTEADOR MULTI-PROVEDOR (24/09/2026, PLAYBOOK §7-V-12, capacidade): quando a franquia gratuita de
+# Workers AI do dia acaba, o Conselho continua em Groq -> Gemini -> OpenRouter (só modelos ':free'),
+# todos gratuitos e já no cofre — GROQ_API_KEY/GEMINI_API_KEY/OPENROUTER_API_KEY abaixo. Só ADIA a
+# peça quando TODOS (Workers AI + os 3 fallbacks) estiverem sem cota/indisponíveis no momento.
+# workflow_dispatch permite rodar qualquer tarefa à mão (inclusive --qa para prova).
+# MULTIMARCA (29/09/2026, PLAYBOOK "sessão instagram-contas-grupo"): TODAS as tarefas iteram as marcas com
+# `publicar.instagram=true` em `redes/kit/<marca>/regras.json` (redes/marcas.py); marca sem token pula com log sem derrubar as
+# outras; publicar é ESCALONADO por horário de cada marca (guard de horário DENTRO de publicar.py, não no cron: por isso o cron
+# roda de hora em hora entre 08:10 e 17:10 BRT e cada marca só sai a partir do seu horário efetivo); a cota gratuita do
+# Conselho é dividida entre as marcas (redes/conselho/cota.py). `metricas` (insights de alcance) roda todo dia 05:00 BRT.
+# ZERO Claude na operação: nenhum passo chama a API paga do modelo de topo (gate em testar_conselho.py).
+# VIGIA (30/09/2026, CVO: "trabalhem de forma autônoma e automatizada (...) pra que a gente não tenha que ficar lembrando"):
+#   rápidas 21:45 e 12:40 BRT (--rapida: confere o Conselho e as publicações da manhã; sem reposição/artigos/token; e-mail
+#                        só com anomalia nova; CVO 30/09: "não pode depender de um aviso, uma sessão, um PC");
+#   todo dia 17:40 BRT → job `vigia` (redes/vigia.py): confere por marca Conselho, publicação (banco x perfil real),
+#                        estoque, token, runs, escaladas paradas e collab; só alerta a central quando há anomalia; auto-cura
+#                        (renova token, re-dispara tarefa que o agendador pulou, descarta escalada parada > 7 dias com
+#                        registro, repõe estoque pelo gerador e commita só redes/estoque/**). Dead-man FORA do GitHub:
+#                        pg_cron `redes_vigia_mudo` (sql/redes-vigia-mudo.sql). ARTIGO NOVO do site (30/09/2026, redes/artigos.py):
+#                        o vigia detecta no índice de cada marca (regras.json `artigos`), registra em `ic_redes_artigo` e
+#                        planeja a pauta (até 2/dia, antes de seção antiga); a peça entra no Conselho da mesma noite. `run-name` abaixo leva o cron/tarefa: é por ele que o vigia sabe o que cada run fez.
+#   Falha de run agendado (ou re-disparado pelo vigia) → passo final `if: failure()` avisa a central (decisão do CVO 30/09).
+name: Consultor de redes
+run-name: "Consultor de redes · ${{ github.event.schedule || github.event.inputs.tarefa || 'lote' }}${{ github.event.inputs.qa == 'true' && ' (qa)' || '' }}${{ github.event.inputs.origem == 'pg_cron' && ' [agendado]' || '' }}"
+
+# DISPARO (30/09/2026): o agendador do GitHub ENTREGAVA ~30% dos crons (30/09: 0 de 5 publicar das 08:10-12:10; metricas e
+# conselho das 05:00/06:00 com 6h30 de atraso). Os horários acima continuam os mesmos, mas quem dispara é o pg_cron do banco
+# InnConta (sql/redes-disparo-pg-cron.sql -> workflow_dispatch com origem=pg_cron, PAT fine-grained só Actions neste repo).
+# O banco também faz o porteiro do publicar: só aciona o Actions quando há peça devida (dia sem peça = 0 minuto). Crons do
+# GitHub removidos para não haver disparo duplo atrasado. Dead-man do próprio disparo: redes_disparo_conferir (a cada 10 min).
+on:
+  workflow_dispatch:
+    inputs:
+      tarefa:
+        description: 'lote | calendario | relatorio | informe | publicar | renovar_ig | video | ensaio | conselho | conselho_diario | metricas | vigia | arte (renderiza a peca_id sob demanda e sobe o PNG como artefato) | artigos (só com qa=true: prova artigo novo -> pauta -> Conselho QA -> consumido)'
+        required: true
+        default: 'lote'
+      qa:
+        description: 'true para modo QA (não toca destinatário real)'
+        required: false
+        default: 'false'
+      mes_ref:
+        description: 'AAAA-MM opcional, para as tarefas calendario/ensaio (default: mês que vem)'
+        required: false
+        default: ''
+      peca_id:
+        description: 'opcional — publicar: força uma peça específica (override de QA/operação); ensaio: ensaia SÓ essa peça direto do estoque (sem exigir linha aprovada no banco, nunca publica)'
+        required: false
+        default: ''
+      lote_json:
+        description: 'opcional, só para a tarefa conselho — caminho de um lote JSON no repo (modo avaliação, sem publicar)'
+        required: false
+        default: ''
+      avaliar_opcoes:
+        description: 'opcional, modo avaliação — ex.: --pecas a,b --voltas 1 --teto 9000 --so-revisores visual'
+        required: false
+        default: ''
+      marca:
+        description: 'opcional — ensaio: marca a ensaiar (default innconta; usa o token e a conta DELA); artigos: marcas da prova separadas por vírgula'
+        required: false
+        default: 'innconta'
+      origem:
+        description: 'pg_cron = disparo agendado pelo banco (sql/redes-disparo-pg-cron.sql); vazio = manual'
+        required: false
+        default: ''
+      log_central:
+        description: 'true manda a cauda do log de cada passo à central mesmo em sucesso (o log do Actions é público e não traz a saída)'
+        required: false
+        default: 'false'
+      vigia_opcoes:
+        description: 'opcional, só para a tarefa vigia — ex.: --marcas innconta --sem-cura; com qa=true também --injetar token_invalido:innconta (falha controlada)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  # CUSTO (CVO 30/09/2026, "enxugar + GitLab reserva"): a conta usa ~1.600 dos 2.000 min/mês gratuitos e o publicar
+  # dispara 10x/dia; cada rodada pesada custa 2 min faturados só de checkout + ffmpeg, mesmo sem nada a publicar.
+  # O porteiro (sem checkout, ~10 s = 1 min) só existe na rodada agendada do publicar: se não há NENHUMA peça
+  # 'aprovado', sem publicado_em e com data <= hoje (a mesma consulta de publicar.rodar, todas as marcas), o job
+  # pesado nem sobe. Falha aberta: erro de rede/banco/segredo = roda o job pesado como antes.
+  porteiro:
+    # também no publicar manual SEM peca_id (com peca_id é override de QA/operação: sempre roda).
+    # com origem=pg_cron o banco já fez esta mesma consulta antes de disparar: porteiro pulado (null != 'pular' -> roda)
+    if: (github.event.schedule == '10 11-20 * * *' || (github.event.inputs.tarefa == 'publicar' && github.event.inputs.peca_id == '')) && github.event.inputs.origem != 'pg_cron'
+    runs-on: ubuntu-latest
+    outputs:
+      rodar: ${{ steps.p.outputs.rodar }}
+    steps:
+      - id: p
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          HOJE=$(TZ=America/Sao_Paulo date +%F)
+          N=$(curl -fsS --max-time 20 "${SB_URL%/}/rest/v1/ic_redes_publicacao?status=eq.aprovado&publicado_em=is.null&data_publicacao=lte.$HOJE&select=id&limit=1" \
+                -H "apikey: $SB_SERVICE_ROLE" -H "Authorization: Bearer $SB_SERVICE_ROLE" \
+              | python3 -c 'import sys,json; d=json.load(sys.stdin); print(len(d) if isinstance(d,list) else "erro")') || N=erro
+          if [ "$N" = "0" ]; then
+            echo "rodar=pular" >> "$GITHUB_OUTPUT"; echo "nada a publicar em $HOJE (nenhuma marca): job pesado pulado."
+          else
+            echo "rodar=sim" >> "$GITHUB_OUTPUT"; echo "porteiro: $N -> roda o publicar."
+          fi
+
+  redes:
+    needs: porteiro
+    # porteiro pulado (toda tarefa que não é o publicar agendado) ou com erro = roda; só 'pular' explícito pula.
+    # O sinal é TEXTO de propósito: com o porteiro pulado a saída é null, e a comparação solta do GitHub converte
+    # null e '0' para o número 0 — `!= '0'` dava falso e pulava TODA tarefa (runs 36718100568/36718638386, 30/09/2026).
+    # O cron do vigia e a tarefa vigia rodam no job `vigia` abaixo (sem ffmpeg nem baterias do publicar).
+    if: ${{ always() && !cancelled() && needs.porteiro.outputs.rodar != 'pular' && github.event.schedule != '40 20 * * *' && github.event.schedule != '45 0 * * *' && github.event.schedule != '40 15 * * *' && github.event.inputs.tarefa != 'vigia' }}
+    runs-on: ubuntu-latest
+    # teto do job: sem isto vale o padrão de 360 min, e um Conselho preso em fila de cota queimava a franquia do mês
+    # (30/09/2026: rodada atrasada passou de 35 min, cancelada; maior run bom dos 40 anteriores = 23 min). Estouro =
+    # timed_out, que o vigia anuncia à central (o passo de falha não roda nesse caso).
+    timeout-minutes: 40
+    env:
+      GUARDA_IDENTIDADE: ${{ secrets.GUARDA_IDENTIDADE }}
+      SB_URL: ${{ secrets.SUPABASE_URL }}
+      SB_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      QUIETO_LOG_CENTRAL: ${{ github.event.inputs.log_central || 'false' }}
+    # publicar roda de hora em hora e o agendador do GitHub atrasa/agrupa disparos: duas rodadas de publicar ao mesmo
+    # tempo leriam a mesma peça 'aprovado' e postariam DUAS vezes. Fila única por tarefa (publicar agendado e manual no
+    # mesmo grupo), sem cancelar a que está rodando (29/09/2026, revisão do PR #74).
+    concurrency:
+      group: redes-consultor-${{ (github.event.schedule == '10 11-20 * * *' || github.event.inputs.tarefa == 'publicar') && 'publicar' || github.event.schedule || github.event.inputs.tarefa || 'lote' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dados privados (kit, estoque e imagens no repo PRIVADO consultor-redes-dados; este repo é público desde 02/10/2026)
+        uses: actions/checkout@v4
+        with:
+          repository: zarkatus/consultor-redes-dados
+          ssh-key: ${{ secrets.DADOS_DEPLOY_KEY }}
+          path: _dados
+      - name: Encaixar os dados nos caminhos que o código lê (redes/kit, redes/estoque, img/og)
+        run: |
+          ln -s "$GITHUB_WORKSPACE/_dados/kit" redes/kit
+          ln -s "$GITHUB_WORKSPACE/_dados/estoque" redes/estoque
+          mkdir -p img && ln -s "$GITHUB_WORKSPACE/_dados/img/og" img/og
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Decidir a tarefa desta rodada
+        id: tarefa
+        run: |
+          case "${{ github.event.schedule }}" in
+            '30 10 * * 1') echo "t=lote" >> "$GITHUB_OUTPUT" ;;
+            '0 11 5 * *') echo "t=calendario" >> "$GITHUB_OUTPUT" ;;
+            '0 10 1 * *') echo "t=relatorio" >> "$GITHUB_OUTPUT" ;;
+            '0 11 * * 1') echo "t=informe" >> "$GITHUB_OUTPUT" ;;
+            '10 11-20 * * *') echo "t=publicar" >> "$GITHUB_OUTPUT" ;;
+            '0 8 * * *') echo "t=metricas" >> "$GITHUB_OUTPUT" ;;
+            '0 9 10 * *') echo "t=renovar_ig" >> "$GITHUB_OUTPUT" ;;
+            '20 0 * * *'|'0 9 * * *') echo "t=conselho_diario" >> "$GITHUB_OUTPUT" ;;
+            *) echo "t=${{ github.event.inputs.tarefa || 'lote' }}" >> "$GITHUB_OUTPUT" ;;
+          esac
+      - name: Dependências (pyyaml/pillow/numpy + ffmpeg — vídeo entra no lote semanal, PLAYBOOK §7-V)
+        run: |
+          # ffmpeg (~30-50 s de apt, 100 pacotes) só nas tarefas que renderizam/leem vídeo: publicar (Reels sob demanda),
+          # lote/video/ensaio/conselho*/arte. As de leitura/relatório nunca chamam ffmpeg (grep 30/09/2026).
+          case "${{ steps.tarefa.outputs.t }}" in
+            metricas|calendario|relatorio|informe|renovar_ig) echo "tarefa ${{ steps.tarefa.outputs.t }}: sem ffmpeg" ;;
+            *) sudo apt-get update -y && sudo apt-get install -y ffmpeg ;;
+          esac
+          pip install -q pyyaml pillow numpy
+      - name: Bateria de guarda (gate — nunca segue se falhar, cobre o roteiro de vídeo também)
+        run: python redes/quieto.py testar_guarda -- python redes/testar_guarda.py
+      - name: Bateria de seleção do publicar (mock, sem rede — gate da janela data/publicado_em)
+        run: python redes/quieto.py testar_kit_selecao -- python redes/testar_kit_selecao.py
+      - name: Bateria da publicação automática LinkedIn (mock, sem rede — gate canal/token/RPC, fila aguardando_api limpa data/mes_ref)
+        run: python redes/quieto.py testar_publicar_linkedin -- python redes/testar_publicar_linkedin.py
+      - name: Bateria da publicação automática Instagram (mock, sem rede — gate canal/token/RPC)
+        run: python redes/quieto.py testar_publicar_instagram -- python redes/testar_publicar_instagram.py
+      - name: Bateria do fluxo de vídeo/Reels do Instagram (mock, sem rede — gate FINISHED/ERROR/EXPIRED/timeout)
+        run: python redes/quieto.py testar_publicar_instagram_reels -- python redes/testar_publicar_instagram_reels.py
+      - name: Bateria do CARROSSEL do Instagram (mock, sem rede — gate filhos/pai/FINISHED/ERROR/limite 2-10/bucket limpo/despacho)
+        run: python redes/quieto.py testar_publicar_instagram_carrossel -- python redes/testar_publicar_instagram_carrossel.py
+      - name: Bateria da renovação do token do Instagram (mock, sem rede — gate refresh/alerta central)
+        run: python redes/quieto.py testar_ig_renovar_token -- python redes/testar_ig_renovar_token.py
+      - name: Bateria do calendário (mock, sem rede — gate do reagendamento da fila aguardando_api do LinkedIn)
+        run: python redes/quieto.py testar_calendario -- python redes/testar_calendario.py
+      - name: Bateria do informe comercial (mock, sem rede — gate da linha "fila do LinkedIn", tom neutro)
+        run: python redes/quieto.py testar_informe_comercial -- python redes/testar_informe_comercial.py
+      - name: Bateria do relatório mensal (mock, sem rede — gate da linha "fila do LinkedIn", tom neutro)
+        run: python redes/quieto.py testar_relatorio_mensal -- python redes/testar_relatorio_mensal.py
+      - name: Bateria do Conselho Editorial (mock, sem rede — unanimidade, redator, 3 voltas, malformado, parada, orçamento)
+        run: python redes/quieto.py testar_conselho -- python redes/testar_conselho.py
+      - name: Bateria da arte sob demanda (mock — PNG ausente renderiza ou não publica; trava de arte por marca)
+        run: python redes/quieto.py testar_arte_sob_demanda -- python redes/testar_arte_sob_demanda.py
+      - name: Bateria do artigo como fonte (mock — detector idempotente, prioridade no gerador, sincronia com o Conselho, site fora do ar)
+        run: python redes/quieto.py testar_artigos -- python redes/testar_artigos.py
+      - name: Bateria de fumaça multimarca (registro, alcance, collab, zero Claude) — no testar_conselho.py e testar_publicar_instagram.py acima
+        run: python redes/quieto.py marcas -- python redes/marcas.py
+      - name: Rodar
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          REDES_APROVACAO_SECRET: ${{ secrets.REDES_APROVACAO_SECRET }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ vars.IG_USER_ID }}
+          CF_WORKERS_AI_TOKEN: ${{ secrets.CF_WORKERS_AI_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CONSELHO_OPCOES: ${{ github.event.inputs.avaliar_opcoes }}
+          CONSELHO_ECONOMICO: '1'  # 1 chamada p/ os 4 revisores de texto + 1 voto visual (01/10/2026: a cota gratuita não sustentava o modo completo)
+          BASE_URL: 'https://innconta.com.br'
+          CVO_EMAIL: ${{ secrets.CVO_EMAIL }}
+          CVO_WA: ${{ secrets.CVO_WA }}
+          ROVEDA_EMAIL: 'roveda@innconta.com.br'
+          TAREFA: ${{ steps.tarefa.outputs.t }}
+          IN_QA: ${{ github.event.inputs.qa }}
+          IN_MES_REF: ${{ github.event.inputs.mes_ref }}
+          IN_PECA_ID: ${{ github.event.inputs.peca_id }}
+          IN_LOTE_JSON: ${{ github.event.inputs.lote_json }}
+          IN_MARCA: ${{ github.event.inputs.marca }}
+        run: python redes/quieto.py "rodar-$TAREFA" -- bash redes/rodar_tarefa.sh
+      - name: Artefato da arte renderizada (só tarefa arte — para inspecionar o PNG que o runner produziu)
+        if: always() && steps.tarefa.outputs.t == 'arte'
+        continue-on-error: true  # cota de artefatos da conta cheia (30/09/2026) não derruba a tarefa: o log já prova o render
+        uses: actions/upload-artifact@v4
+        with:
+          name: arte-sob-demanda
+          path: |
+            redes/estoque/*/_gerados/
+            !redes/estoque/innconta/_gerados/
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Falha de rodada agendada -> central técnica (AOP-01; e-mail de Actions da conta desligado, CVO 30/09/2026)
+        # também quando quem disparou foi o vigia (re-disparo de tarefa pulada pelo agendador, ator github-actions[bot])
+        if: failure() && (github.event_name == 'schedule' || github.triggering_actor == 'github-actions[bot]' || github.event.inputs.origem == 'pg_cron')
+        continue-on-error: true
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_SERVICE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TAREFA: ${{ steps.tarefa.outputs.t }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sf -X POST "$SB_URL/rest/v1/rpc/ic_email" \
+            -H "apikey: $SB_SERVICE" -H "Authorization: Bearer $SB_SERVICE" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg t "${TAREFA:-desconhecida}" --arg run "$RUN_URL" \
+              '{p_para:"central@innconta.com.br",
+                p_assunto:("[ALERTA] Consultor de redes falhou: " + $t),
+                p_html:("<p><b>O que quebrou:</b> a tarefa agendada <code>" + $t + "</code> do Consultor de redes terminou em erro.</p><p><b>Valor observado:</b> run com status failure (log no link).</p><p><b>Ação:</b> abrir o log, achar o passo vermelho e corrigir na origem; publicar é idempotente e roda de novo na próxima rodada.</p><p>" + $run + "</p>")}')" > /dev/null
+
+  vigia:
+    if: github.event.schedule == '40 20 * * *' || github.event.schedule == '45 0 * * *' || github.event.schedule == '40 15 * * *' || github.event.inputs.tarefa == 'vigia'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GUARDA_IDENTIDADE: ${{ secrets.GUARDA_IDENTIDADE }}
+      SB_URL: ${{ secrets.SUPABASE_URL }}
+      SB_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      QUIETO_LOG_CENTRAL: ${{ github.event.inputs.log_central || 'false' }}
+    permissions:
+      contents: read    # a reposição commita no repo de DADOS, pela deploy key (02/10/2026)
+      actions: write    # ler os runs e re-disparar (workflow_dispatch) a tarefa diária que o agendador pulou
+    concurrency:
+      group: redes-consultor-vigia
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dados privados (kit, estoque e imagens no repo PRIVADO consultor-redes-dados; este repo é público desde 02/10/2026)
+        uses: actions/checkout@v4
+        with:
+          repository: zarkatus/consultor-redes-dados
+          ssh-key: ${{ secrets.DADOS_DEPLOY_KEY }}
+          path: _dados
+      - name: Encaixar os dados nos caminhos que o código lê (redes/kit, redes/estoque, img/og)
+        run: |
+          ln -s "$GITHUB_WORKSPACE/_dados/kit" redes/kit
+          ln -s "$GITHUB_WORKSPACE/_dados/estoque" redes/estoque
+          mkdir -p img && ln -s "$GITHUB_WORKSPACE/_dados/img/og" img/og
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Dependências (sem ffmpeg — o vigia não renderiza vídeo)
+        run: pip install -q pyyaml pillow numpy
+      - name: Bateria do vigia (mock, sem rede — gate de todas as checagens, controles negativos e QA sem auto-cura)
+        run: python redes/quieto.py testar_vigia -- python redes/testar_vigia.py
+      - name: Bateria do artigo como fonte (mock — gate do detector e do caminho de artigo do gerador que a reposição usa)
+        run: python redes/quieto.py testar_artigos -- python redes/testar_artigos.py
+      - name: Vigiar (registro em ic_aviso_log; e-mail à central só se houver anomalia)
+        id: vigiar
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_USER_ID: ${{ vars.IG_USER_ID }}
+          GH_TOKEN: ${{ github.token }}
+          QA_FLAG: ${{ github.event.inputs.qa == 'true' && '--qa' || '' }}
+          OPCOES: ${{ github.event.inputs.vigia_opcoes }}
+          RAPIDA: ${{ (github.event.schedule == '45 0 * * *' || github.event.schedule == '40 15 * * *') && '--rapida' || '' }}
+        run: python redes/quieto.py vigia -- python redes/vigia.py vigiar $QA_FLAG $RAPIDA --plano "$RUNNER_TEMP/repor.json" $OPCOES
+      - name: Repor estoque (auto-cura — gerador com IA gratuita; peças novas vão à fila do Conselho das 21:20)
+        if: steps.vigiar.outcome == 'success' && github.event.inputs.qa != 'true' && github.event.schedule != '45 0 * * *' && github.event.schedule != '40 15 * * *' && !contains(github.event.inputs.vigia_opcoes, '--rapida')
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          CF_WORKERS_AI_TOKEN: ${{ secrets.CF_WORKERS_AI_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: |
+          PLANO="$RUNNER_TEMP/repor.json"
+          if [ ! -s "$PLANO" ] || [ "$(cat "$PLANO")" = "{}" ]; then echo "nada a repor"; exit 0; fi
+          python redes/quieto.py repor -- python redes/vigia.py repor --plano "$PLANO"
+          # o estoque mora no repo privado de dados (redes/estoque -> _dados/estoque): o commit é lá (02/10/2026)
+          cd _dados
+          git config user.name "consultor-redes-vigia[bot]"
+          git config user.email "central@innconta.com.br"
+          # só peça nova (.md) e o spec da arte; adiadas.json é rascunho local do gerador e não vai ao git
+          NOVOS=$(git ls-files --others --modified --exclude-standard -- 'estoque/*/*.md' 'estoque/*/_arte/pecas-v2.json')
+          if [ -z "$NOVOS" ]; then echo "o gerador não produziu peça (o vigia de amanhã repete e escala)"; exit 0; fi
+          # checkout raso (depth 1): nada de rebase; guarda os arquivos, volta à ponta do ramo e reaplica (3 tentativas)
+          SALVO="$RUNNER_TEMP/repor-arquivos"; mkdir -p "$SALVO"
+          echo "$NOVOS" | while read -r f; do mkdir -p "$SALVO/$(dirname "$f")"; cp "$f" "$SALVO/$f"; done
+          for tentativa in 1 2 3; do
+            git fetch -q --depth=1 origin main
+            git reset -q --hard FETCH_HEAD
+            cp -r "$SALVO/estoque/." estoque/
+            git add -- $NOVOS
+            git commit -q -m "redes: reposição automática de estoque pelo vigia ($(date -u +%F))"
+            if git push -q origin "HEAD:main"; then echo "reposição commitada no repo de dados: $(echo "$NOVOS" | wc -l) arquivo(s)"; exit 0; fi
+            sleep 5
+          done
+          echo "push da reposição falhou 3x"; exit 1
+      - name: Vigia agendado falhou -> central técnica (AOP-01; sem isto o vigia caído só apareceria no dead-man)
+        if: failure() && (github.event_name == 'schedule' || github.event.inputs.origem == 'pg_cron')
+        continue-on-error: true
+        env:
+          SB_URL: ${{ secrets.SUPABASE_URL }}
+          SB_SERVICE: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CRON: ${{ github.event.schedule || format('pg_cron {0}', github.event.inputs.vigia_opcoes) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl -sf -X POST "$SB_URL/rest/v1/rpc/ic_email" \
+            -H "apikey: $SB_SERVICE" -H "Authorization: Bearer $SB_SERVICE" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg c "$CRON" --arg run "$RUN_URL" \
+              '{p_para:"central@innconta.com.br",
+                p_assunto:("[ALERTA] Vigia do Consultor de redes falhou (cron " + $c + ")"),
+                p_html:("<p><b>O que quebrou:</b> a rodada agendada do vigia (cron <code>" + $c + "</code>) terminou em erro: Conselho, publicação e perfil real NÃO foram conferidos nesta rodada.</p><p><b>Valor observado:</b> run com status failure (log no link).</p><p><b>Ação:</b> abrir o log, corrigir o passo vermelho e disparar <code>tarefa=vigia</code>; a próxima rodada agendada também confere.</p><p>" + $run + "</p>")}')" > /dev/null

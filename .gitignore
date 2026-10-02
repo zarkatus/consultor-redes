@@ -1,0 +1,7 @@
+# dados vivem no repositório PRIVADO zarkatus/consultor-redes-dados (checkout em _dados/ + links no runner)
+_dados/
+redes/kit
+redes/estoque
+img/
+__pycache__/
+*.pyc

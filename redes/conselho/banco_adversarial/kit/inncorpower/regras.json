@@ -1,0 +1,54 @@
+{
+ "marca": "inncorpower",
+ "tipo": "empresa",
+ "nome": "InnCorPower",
+ "site": "https://inncorpower.exemplo.com.br",
+ "dominios_origem": [
+  "inncorpower.exemplo.com.br"
+ ],
+ "handle_instagram": "@inncorpower.oficial",
+ "ig_user_id": "1",
+ "publicar": {
+  "instagram": true,
+  "linkedin": false,
+  "horario_brt": "09:00"
+ },
+ "voz": {
+  "tom": "Sobrio e sofisticado. Frases curtas. Autoridade sobre o que a empresa faz, nunca venda nem motivacao.",
+  "proibidos": [
+   "cesta",
+   "loteamento",
+   "credito barato",
+   "parceiro contratado"
+  ],
+  "preferidos": [],
+  "regras_extra": []
+ },
+ "temas": [
+  "energia",
+  "contratos de energia"
+ ],
+ "palavras_chave": [
+  "energia",
+  "contrato",
+  "fatura",
+  "regularidade",
+  "usina"
+ ],
+ "hashtags": [
+  "#InnCorPower",
+  "#regularidadefiscal",
+  "#gestaoempresarial"
+ ],
+ "fontes_oficiais_extra": [],
+ "discricao": {
+  "sigilo": true,
+  "nao_citar": []
+ },
+ "collab": {
+  "parceiros": [],
+  "min_por_semana": 0,
+  "max_por_semana": 2
+ },
+ "email_escalada": "central@innconta.com.br"
+}

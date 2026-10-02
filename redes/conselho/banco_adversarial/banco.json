@@ -1,0 +1,440 @@
+{
+ "nomes_clientes": [
+  "Construtora Horizonte Azul Ltda"
+ ],
+ "referencias": [
+  {
+   "marca": "innconta",
+   "peca_id": "pub-simples",
+   "texto": "O prazo para optar pelo Simples Nacional termina no último dia útil de janeiro.\nErro comum: deixar a opção para a última semana. Método: conferir o enquadramento da empresa em dezembro.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "data": null
+  },
+  {
+   "marca": "innovasphere",
+   "peca_id": "pub-ncm",
+   "texto": "A NCM tem 8 dígitos e define o tributo de cada item da nota.\nErro comum: classificar pela descrição comercial. Método: conferir o código na tabela oficial antes de emitir.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "data": "2026-10-05"
+  }
+ ],
+ "pecas": [
+  {
+   "peca_id": "c01-certidao-180",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A certidão negativa federal vale 180 dias.\nErro comum: renovar só quando o edital exige. Método: um alerta antes do vencimento, para a regularidade fiscal da empresa não depender de memória.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Pergunta da mesa\nA certidão vence em 180 dias",
+   "fontes": [
+    {
+     "dado": "A certidão negativa de débitos federais tem validade de 180 dias",
+     "norma": "Portaria Conjunta RFB/PGFN nº 1.751/2014, art. 1º",
+     "url": "https://www.gov.br/receitafederal/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": null,
+   "esperado": "passar"
+  },
+  {
+   "peca_id": "c02-cita-innovasphere",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "Em parceria com a InnovaSphere: a certidão negativa federal vale 180 dias.\nErro comum: renovar só quando o edital exige. Método: um alerta antes do vencimento, para a regularidade fiscal da empresa não depender de memória.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial #InnovaSphere",
+   "texto_arte": "Pergunta da mesa\nA certidão vence em 180 dias",
+   "fontes": [
+    {
+     "dado": "A certidão negativa de débitos federais tem validade de 180 dias",
+     "norma": "Portaria Conjunta RFB/PGFN nº 1.751/2014, art. 1º",
+     "url": "https://www.gov.br/receitafederal/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": null,
+   "esperado": "passar",
+   "collab": true
+  },
+  {
+   "peca_id": "c03-innovasphere-simples",
+   "marca": "innovasphere",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A opção pelo Simples Nacional vai até o último dia útil de janeiro.\nErro comum: descobrir o prazo em fevereiro. Método: rotina com alerta em dezembro para a empresa não esperar um ano.\nSalve este post para consultar depois.\n#InnovaSphere #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Método\nAlerta em dezembro",
+   "fontes": [
+    {
+     "dado": "A opção pelo Simples Nacional é feita até o último dia útil de janeiro",
+     "norma": "Lei Complementar nº 123/2006, art. 16",
+     "url": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": null,
+   "esperado": "passar"
+  },
+  {
+   "peca_id": "c04-inncorpower-demanda",
+   "marca": "inncorpower",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A demanda contratada aparece na fatura e é cobrada mesmo quando não é consumida.\nErro comum: renovar o contrato de energia sem revisar a demanda. Método: comparar o contratado com o medido nos últimos meses.\nSalve este post para consultar depois.\n#InnCorPower #energia #contrato",
+   "texto_arte": "Método\nDemanda contratada",
+   "fontes": [
+    {
+     "dado": "A demanda contratada consta na fatura e é cobrada mesmo quando não é consumida",
+     "norma": "Resolução Normativa ANEEL nº 1.000/2021",
+     "url": "https://www.gov.br/aneel/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": null,
+   "esperado": "passar"
+  },
+  {
+   "peca_id": "c05-ncm-8-digitos",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A NCM tem 8 dígitos e decide a tributação de cada item da nota.\nErro comum: classificar pelo nome comercial. Método: conferir a NCM na tabela oficial antes da emissão, pela regularidade fiscal da empresa.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Método\nNCM com 8 dígitos",
+   "fontes": [
+    {
+     "dado": "A NCM tem 8 dígitos",
+     "norma": "Decreto nº 11.158/2022 (TIPI, que adota a NCM)",
+     "url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/decreto/D11158.htm"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": null,
+   "esperado": "passar"
+  },
+  {
+   "peca_id": "c06-innovasphere-imagem",
+   "marca": "innovasphere",
+   "canal": "instagram",
+   "formato": "imagem_feed",
+   "tipo": "carrossel",
+   "texto": "A Emenda Constitucional 132/2023 criou o IBS e a CBS.\nErro comum: tratar a reforma tributária como assunto distante. Método: revisar o cadastro de produtos e a NCM da empresa agora.\nSalve este post para consultar depois.\n#InnovaSphere #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Marco\nEC 132/2023",
+   "fontes": [
+    {
+     "dado": "A Emenda Constitucional nº 132/2023 criou o IBS e a CBS",
+     "norma": "Emenda Constitucional nº 132/2023",
+     "url": "https://www.planalto.gov.br/ccivil_03/constituicao/emendas/emc/emc132.htm"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": null,
+   "esperado": "passar",
+   "imagem": {
+    "w": 1080,
+    "h": 1350,
+    "linhas": [
+     "Marco",
+     "EC 132/2023",
+     "IBS e CBS"
+    ]
+   }
+  },
+  {
+   "peca_id": "d01-numero-na-arte-fora-da-fonte",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A certidão negativa federal vale 180 dias.\nErro comum: renovar só quando o edital exige. Método: um alerta antes do vencimento, para a regularidade fiscal da empresa não depender de memória.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Pergunta da mesa\nReduza 72% do imposto",
+   "fontes": [
+    {
+     "dado": "A certidão negativa de débitos federais tem validade de 180 dias",
+     "norma": "Portaria Conjunta RFB/PGFN nº 1.751/2014, art. 1º",
+     "url": "https://www.gov.br/receitafederal/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "numero_arte_fora_da_fonte",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d02-numero-operacional-inncorpower",
+   "marca": "inncorpower",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A usina de 150 MWac tem TIR de 14% e CAPEX de R$ 800 milhões.\nErro comum: renovar o contrato de energia sem revisar a demanda. Método: comparar o contratado com o medido nos últimos meses.\nSalve este post para consultar depois.\n#InnCorPower #energia #contrato",
+   "texto_arte": "Método\nDemanda contratada",
+   "fontes": [
+    {
+     "dado": "A demanda contratada consta na fatura e é cobrada mesmo quando não é consumida",
+     "norma": "Resolução Normativa ANEEL nº 1.000/2021",
+     "url": "https://www.gov.br/aneel/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "sigilo_numero_operacional",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d03-sigilo-na-arte-inncorpower",
+   "marca": "inncorpower",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A demanda contratada aparece na fatura e é cobrada mesmo quando não é consumida.\nErro comum: renovar o contrato de energia sem revisar a demanda. Método: comparar o contratado com o medido nos últimos meses.\nSalve este post para consultar depois.\n#InnCorPower #energia #contrato",
+   "texto_arte": "Marco\nUsina de 300 MW",
+   "fontes": [
+    {
+     "dado": "A demanda contratada consta na fatura e é cobrada mesmo quando não é consumida",
+     "norma": "Resolução Normativa ANEEL nº 1.000/2021",
+     "url": "https://www.gov.br/aneel/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "sigilo_na_arte",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d04-quase-identico-a-publicada",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "O prazo para optar pelo Simples Nacional termina no último dia útil de janeiro.\nErro comum: deixar a opção para a última semana. Método: conferir o enquadramento da empresa em dezembro, sem pressa.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Pergunta da mesa\nSimples Nacional: até janeiro",
+   "fontes": [
+    {
+     "dado": "A opção pelo Simples Nacional é feita até o último dia útil de janeiro",
+     "norma": "Lei Complementar nº 123/2006, art. 16",
+     "url": "https://www.planalto.gov.br/ccivil_03/leis/lcp/lcp123.htm"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "quase_identico_a_publicada",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d05-identico-outra-marca-mesmo-dia",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A NCM tem 8 dígitos e define o tributo de cada item da nota.\nErro comum: classificar pela descrição comercial. Método: conferir o código na tabela oficial antes de emitir.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Método\nNCM com 8 dígitos",
+   "fontes": [
+    {
+     "dado": "A NCM tem 8 dígitos",
+     "norma": "Decreto nº 11.158/2022 (TIPI, que adota a NCM)",
+     "url": "https://www.planalto.gov.br/ccivil_03/_ato2019-2022/2022/decreto/D11158.htm"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "outra_marca_mesmo_dia",
+   "esperado": "reprovar",
+   "data_publicacao": "2026-10-05"
+  },
+  {
+   "peca_id": "d06-palavra-casa",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A certidão negativa federal vale 180 dias.\nErro comum: renovar só quando o edital exige. Método: a casa avisa antes do vencimento, pela regularidade fiscal da empresa.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Pergunta da mesa\nA certidão vence em 180 dias",
+   "fontes": [
+    {
+     "dado": "A certidão negativa de débitos federais tem validade de 180 dias",
+     "norma": "Portaria Conjunta RFB/PGFN nº 1.751/2014, art. 1º",
+     "url": "https://www.gov.br/receitafederal/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "palavra_casa",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d07-promessa-de-resultado",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A certidão negativa federal vale 180 dias.\nErro comum: renovar só quando o edital exige. Método: alerta antes do vencimento, com resultado garantido e zero multa na regularidade fiscal da empresa.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Pergunta da mesa\nA certidão vence em 180 dias",
+   "fontes": [
+    {
+     "dado": "A certidão negativa de débitos federais tem validade de 180 dias",
+     "norma": "Portaria Conjunta RFB/PGFN nº 1.751/2014, art. 1º",
+     "url": "https://www.gov.br/receitafederal/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "promessa_resultado",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d08-fonte-dominio-nao-permitido",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A certidão negativa federal vale 180 dias.\nErro comum: renovar só quando o edital exige. Método: um alerta antes do vencimento, para a regularidade fiscal da empresa não depender de memória.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Pergunta da mesa\nA certidão vence em 180 dias",
+   "fontes": [
+    {
+     "dado": "A certidão negativa tem validade de 180 dias",
+     "norma": "post de blog",
+     "url": "https://medium.com/@contador/certidao-negativa-180-dias"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "fonte_dominio_nao_permitido",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d09-imagem-proporcao-invalida",
+   "marca": "innovasphere",
+   "canal": "instagram",
+   "formato": "imagem_feed",
+   "tipo": "carrossel",
+   "texto": "A Emenda Constitucional 132/2023 criou o IBS e a CBS.\nErro comum: tratar a reforma tributária como assunto distante. Método: revisar o cadastro de produtos e a NCM da empresa agora.\nSalve este post para consultar depois.\n#InnovaSphere #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Marco\nEC 132/2023",
+   "fontes": [
+    {
+     "dado": "A Emenda Constitucional nº 132/2023 criou o IBS e a CBS",
+     "norma": "Emenda Constitucional nº 132/2023",
+     "url": "https://www.planalto.gov.br/ccivil_03/constituicao/emendas/emc/emc132.htm"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "imagem_proporcao_invalida",
+   "esperado": "reprovar",
+   "imagem": {
+    "w": 1080,
+    "h": 2400,
+    "linhas": [
+     "Marco",
+     "EC 132/2023",
+     "IBS e CBS"
+    ]
+   }
+  },
+  {
+   "peca_id": "d10-nome-de-cliente",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A certidão negativa federal vale 180 dias.\nErro comum: renovar só quando o edital exige. Método: alerta antes do vencimento, como fez a Construtora Horizonte Azul Ltda.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Pergunta da mesa\nA certidão vence em 180 dias",
+   "fontes": [
+    {
+     "dado": "A certidão negativa de débitos federais tem validade de 180 dias",
+     "norma": "Portaria Conjunta RFB/PGFN nº 1.751/2014, art. 1º",
+     "url": "https://www.gov.br/receitafederal/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "nome_de_cliente",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d11-sem-palavra-chave",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "O Brasil tem 5.570 municípios.\nErro comum: achar que toda cidade tem a mesma regra. Método: consultar a lei local antes de decidir.\nSalve este post para consultar depois.\n#InnConta #cidades #brasil",
+   "texto_arte": "Pergunta da mesa\nBrasil: 5.570 municípios",
+   "fontes": [
+    {
+     "dado": "O Brasil tem 5.570 municípios",
+     "norma": "IBGE, Cidades e Estados",
+     "url": "https://www.ibge.gov.br/cidades-e-estados"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "sem_palavra_chave",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d12-primeira-frase-sem-gancho",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A certidão negativa de débitos federais, que comprova a regularidade da empresa perante a Receita Federal e a PGFN em licitações e financiamentos, vale 180 dias contados da emissão.\nMétodo: um alerta antes do vencimento.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Pergunta da mesa\nA certidão vence em 180 dias",
+   "fontes": [
+    {
+     "dado": "A certidão negativa de débitos federais tem validade de 180 dias",
+     "norma": "Portaria Conjunta RFB/PGFN nº 1.751/2014, art. 1º",
+     "url": "https://www.gov.br/receitafederal/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "primeira_frase_sem_gancho",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d13-trinta-hashtags",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A certidão negativa federal vale 180 dias.\nErro comum: renovar só quando o edital exige. Método: um alerta antes do vencimento, para a regularidade fiscal da empresa não depender de memória.\nSalve este post para consultar depois.\n#tag0 #tag1 #tag2 #tag3 #tag4 #tag5 #tag6 #tag7 #tag8 #tag9 #tag10 #tag11 #tag12 #tag13 #tag14 #tag15 #tag16 #tag17 #tag18 #tag19 #tag20 #tag21 #tag22 #tag23 #tag24 #tag25 #tag26 #tag27 #tag28 #tag29",
+   "texto_arte": "Pergunta da mesa\nA certidão vence em 180 dias",
+   "fontes": [
+    {
+     "dado": "A certidão negativa de débitos federais tem validade de 180 dias",
+     "norma": "Portaria Conjunta RFB/PGFN nº 1.751/2014, art. 1º",
+     "url": "https://www.gov.br/receitafederal/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "trinta_hashtags",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d14-agente-virtual",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A certidão negativa federal vale 180 dias.\nErro comum: renovar só quando o edital exige. Método: nosso agente virtual avisa antes do vencimento, pela regularidade fiscal da empresa.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Pergunta da mesa\nA certidão vence em 180 dias",
+   "fontes": [
+    {
+     "dado": "A certidão negativa de débitos federais tem validade de 180 dias",
+     "norma": "Portaria Conjunta RFB/PGFN nº 1.751/2014, art. 1º",
+     "url": "https://www.gov.br/receitafederal/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "agente_virtual",
+   "esperado": "reprovar"
+  },
+  {
+   "peca_id": "d15-parceiro-contratado",
+   "marca": "innconta",
+   "canal": "instagram",
+   "formato": "texto",
+   "tipo": "carrossel",
+   "texto": "A certidão negativa federal vale 180 dias.\nErro comum: renovar só quando o edital exige. Método: parceiros contratados avisam antes do vencimento, pela regularidade fiscal da empresa.\nSalve este post para consultar depois.\n#InnConta #regularidadefiscal #gestaoempresarial",
+   "texto_arte": "Pergunta da mesa\nA certidão vence em 180 dias",
+   "fontes": [
+    {
+     "dado": "A certidão negativa de débitos federais tem validade de 180 dias",
+     "norma": "Portaria Conjunta RFB/PGFN nº 1.751/2014, art. 1º",
+     "url": "https://www.gov.br/receitafederal/pt-br"
+    }
+   ],
+   "nota_urls": [],
+   "defeito": "parceiro_contratado",
+   "esperado": "reprovar"
+  }
+ ]
+}

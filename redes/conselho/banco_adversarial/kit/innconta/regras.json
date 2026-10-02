@@ -1,0 +1,82 @@
+{
+ "marca": "innconta",
+ "tipo": "empresa",
+ "nome": "InnConta",
+ "site": "https://innconta.com.br",
+ "dominios_origem": [
+  "innconta.com.br"
+ ],
+ "handle_instagram": "@innconta.oficial",
+ "ig_user_id": "17841423629421327",
+ "publicar": {
+  "instagram": true,
+  "linkedin": true,
+  "horario_brt": "09:00"
+ },
+ "voz": {
+  "tom": "Sobrio e sofisticado. Frases curtas, com elipse, carregadas. Autoridade sobre o que a InnConta faz (fiscal, energia, recebiveis, patrimonio, regularidade de empresas), nunca venda nem motivacao.",
+  "proibidos": [
+   "cesta",
+   "loteamento",
+   "parceiro contratado",
+   "parceiro homologado",
+   "parceiro terceirizado",
+   "credito barato",
+   "linha subsidiada"
+  ],
+  "preferidos": [
+   "regularidade",
+   "norma",
+   "prazo",
+   "metodo"
+  ],
+  "regras_extra": [
+   "'Nota InnConta n.' como titulo ou abertura (so pode ser rodape)",
+   "'credito' apresentado como bom sem qualificar",
+   "apresentar a InnConta por lista curta e fechada de frentes",
+   "revelar que terceiros executam o servico"
+  ]
+ },
+ "temas": [
+  "fiscal",
+  "energia",
+  "recebiveis",
+  "patrimonio",
+  "regularidade de empresas",
+  "contas de consumo",
+  "juridico",
+  "reforma tributaria"
+ ],
+ "palavras_chave": [
+  "regularidade",
+  "fiscal",
+  "tributaria",
+  "energia",
+  "recebiveis",
+  "patrimonio",
+  "empresa",
+  "certidao",
+  "norma",
+  "prazo"
+ ],
+ "hashtags": [
+  "#InnConta",
+  "#regularidadefiscal",
+  "#gestaoempresarial",
+  "#compliancefiscal",
+  "#planejamentotributario"
+ ],
+ "fontes_oficiais_extra": [],
+ "discricao": {
+  "sigilo": false,
+  "nao_citar": []
+ },
+ "collab": {
+  "parceiros": [
+   "innovasphere"
+  ],
+  "min_por_semana": 1,
+  "max_por_semana": 2
+ },
+ "email_escalada": "central@innconta.com.br"
+}

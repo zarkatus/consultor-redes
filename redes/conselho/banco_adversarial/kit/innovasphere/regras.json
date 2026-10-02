@@ -1,0 +1,57 @@
+{
+ "marca": "innovasphere",
+ "tipo": "empresa",
+ "nome": "InnovaSphere",
+ "site": "https://innovasphere.exemplo.com.br",
+ "dominios_origem": [
+  "innovasphere.exemplo.com.br"
+ ],
+ "handle_instagram": "@innovasphere.oficial",
+ "ig_user_id": "1",
+ "publicar": {
+  "instagram": true,
+  "linkedin": false,
+  "horario_brt": "09:00"
+ },
+ "voz": {
+  "tom": "Sobrio e sofisticado. Frases curtas. Autoridade sobre o que a empresa faz, nunca venda nem motivacao.",
+  "proibidos": [
+   "cesta",
+   "loteamento",
+   "credito barato",
+   "parceiro contratado"
+  ],
+  "preferidos": [],
+  "regras_extra": []
+ },
+ "temas": [
+  "tecnologia",
+  "gestao",
+  "rotina"
+ ],
+ "palavras_chave": [
+  "regularidade",
+  "prazo",
+  "rotina",
+  "sistema",
+  "empresa"
+ ],
+ "hashtags": [
+  "#InnovaSphere",
+  "#regularidadefiscal",
+  "#gestaoempresarial"
+ ],
+ "fontes_oficiais_extra": [],
+ "discricao": {
+  "sigilo": false,
+  "nao_citar": []
+ },
+ "collab": {
+  "parceiros": [
+   "innconta"
+  ],
+  "min_por_semana": 0,
+  "max_por_semana": 2
+ },
+ "email_escalada": "central@innconta.com.br"
+}
