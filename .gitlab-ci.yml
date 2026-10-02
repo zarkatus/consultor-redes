@@ -22,7 +22,6 @@ variables:
   TAREFA: "publicar"   # a agenda ou o disparo troca: publicar | conselho_diario | metricas (prova sem efeito) | renovar_ig
   SB_URL: "https://gprkopmqhocsslrdmebm.supabase.co"
   BASE_URL: "https://innconta.com.br"
-  CONSELHO_ECONOMICO: "1"
 
 redes:
   image: python:3.12-slim
@@ -86,4 +85,6 @@ redes:
       python redes/marcas.py
     - |
       export GUARDA_IDENTIDADE="$(printf '%s' "$GUARDA_IDENTIDADE_B64" | base64 -d)"
+      # só aqui, como no passo "Rodar" do GitHub: com ele ligado a bateria do Conselho (modo completo) falha
+      export CONSELHO_ECONOMICO=1
       bash redes/rodar_tarefa.sh
