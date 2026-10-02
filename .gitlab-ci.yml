@@ -1,0 +1,89 @@
+# RESERVA do Consultor de redes no GitLab CI (decisão do CVO 30/09/2026: "enxugar + GitLab reserva"; migrada do
+# innconta-site para este repo em 02/10/2026, na virada para repositório público).
+# Este arquivo mora no repo do GitHub e chega ao GitLab pelo espelho (zarkatus-mirror/consultor-redes, PRIVADO, empurrado
+# pela VM do Google a cada 6 h; tópico `reserva-ci` mantém o CI ligado). O GitHub ignora este arquivo. No GitLab:
+#   - nunca roda em push (cada empurrão do espelho queimaria a cota de 400 min/mês do plano gratuito);
+#   - agendado só roda com a variável de projeto RESERVA_REDES == "1" (e as agendas nascem inativas);
+#   - trigger/manual (o banco, sql/redes-disparo-pg-cron.sql, quando o GitHub recusa ou não sobe o job) roda sempre.
+# Escopo mínimo de contingência: publicar, conselho_diario, metricas, renovar_ig. NUNCA ligar as agendas com o GitHub
+# rodando: dois publicar ao mesmo tempo podem postar a mesma peça duas vezes.
+# Repo público: nada pessoal aqui. Identidade da guarda, e-mail do CVO e chave dos dados vêm de variáveis mascaradas
+# do projeto GitLab (`python redes/reserva_gitlab.py configurar`). Os dados (kit, estoque, img/og) vêm do repo PRIVADO
+# zarkatus/consultor-redes-dados pela deploy key (só leitura aqui: nenhuma tarefa da reserva commita).
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule" && $RESERVA_REDES == "1"'
+    - if: '$CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api" || $CI_PIPELINE_SOURCE == "trigger"'
+    - when: never
+
+variables:
+  GIT_DEPTH: "1"
+  TAREFA: "publicar"   # a agenda ou o disparo troca: publicar | conselho_diario | metricas (prova sem efeito) | renovar_ig
+  SB_URL: "https://gprkopmqhocsslrdmebm.supabase.co"
+  BASE_URL: "https://innconta.com.br"
+  CONSELHO_ECONOMICO: "1"
+
+redes:
+  image: python:3.12-slim
+  timeout: 30m
+  resource_group: redes-$TAREFA   # fila única por tarefa, como o concurrency do GitHub
+  script:
+    - |
+      # variável protegida só chega a ramo protegido: sem segredo = falha alta, nunca rodada muda (30/09/2026).
+      for v in SB_SERVICE_ROLE CF_WORKERS_AI_TOKEN GROQ_API_KEY RESEND_API_KEY GUARDA_IDENTIDADE_B64 DADOS_DEPLOY_KEY_B64 CVO_EMAIL; do
+        eval "val=\${$v:-}"
+        if [ -z "$val" ]; then echo "SEGREDO AUSENTE: $v (main do GitLab desprotegida? rode reserva_gitlab.py estado)"; exit 1; fi
+      done
+      case "$TAREFA" in
+        publicar|conselho_diario|metricas|renovar_ig) ;;
+        *) echo "tarefa fora do escopo da reserva: $TAREFA"; exit 1 ;;
+      esac
+    - |
+      set -eo pipefail
+      if [ "$TAREFA" = "publicar" ]; then
+        # porteiro (o mesmo do GitHub): nada devido em nenhuma marca = sai antes de instalar qualquer coisa. Falha aberta.
+        HOJE=$(date -u -d '-3 hours' +%F)
+        N=$(python3 - "$HOJE" <<'EOF' || echo erro
+      import json, os, sys, urllib.request
+      q = "status=eq.aprovado&publicado_em=is.null&data_publicacao=lte.%s&select=id&limit=1" % sys.argv[1]
+      k = os.environ["SB_SERVICE_ROLE"]
+      r = urllib.request.Request(os.environ["SB_URL"].rstrip("/") + "/rest/v1/ic_redes_publicacao?" + q,
+                                 headers={"apikey": k, "Authorization": "Bearer " + k})
+      print(len(json.load(urllib.request.urlopen(r, timeout=20))))
+      EOF
+        )
+        if [ "$N" = "0" ]; then echo "nada a publicar em $HOJE (nenhuma marca): reserva encerra sem rodar."; exit 0; fi
+        echo "porteiro: $N -> roda o publicar."
+      fi
+    - |
+      set -e
+      PKGS="git openssh-client tzdata"
+      case "$TAREFA" in publicar|conselho_diario) PKGS="$PKGS ffmpeg" ;; esac
+      apt-get update -qq && apt-get install -y -qq $PKGS >/dev/null
+      pip install -q pyyaml pillow numpy
+    - |
+      # dados privados pela deploy key (a chave nunca vai ao log: arquivo 600, apagado no fim do passo)
+      set -e
+      mkdir -p ~/.ssh && chmod 700 ~/.ssh
+      printf '%s' "$DADOS_DEPLOY_KEY_B64" | base64 -d > ~/.ssh/dados && chmod 600 ~/.ssh/dados
+      ssh-keyscan -t ed25519,rsa github.com >> ~/.ssh/known_hosts 2>/dev/null
+      GIT_SSH_COMMAND="ssh -i ~/.ssh/dados -o IdentitiesOnly=yes" git clone -q --depth 1 git@github.com:zarkatus/consultor-redes-dados.git _dados
+      rm -f ~/.ssh/dados
+      ln -s "$CI_PROJECT_DIR/_dados/kit" redes/kit
+      ln -s "$CI_PROJECT_DIR/_dados/estoque" redes/estoque
+      mkdir -p img && ln -s "$CI_PROJECT_DIR/_dados/img/og" img/og
+      echo "dados encaixados: $(git -C _dados rev-parse --short HEAD)"
+    - |
+      # baterias SEM credencial nenhuma, como no GitHub: mock nunca alcança produção. A identidade da guarda fica (é o gate).
+      set -e
+      export GUARDA_IDENTIDADE="$(printf '%s' "$GUARDA_IDENTIDADE_B64" | base64 -d)"
+      SEM="env -u SB_URL -u SB_SERVICE_ROLE -u CF_WORKERS_AI_TOKEN -u GEMINI_API_KEY -u GROQ_API_KEY -u OPENROUTER_API_KEY -u RESEND_API_KEY -u REDES_APROVACAO_SECRET -u CVO_EMAIL"
+      $SEM python redes/testar_guarda.py
+      $SEM python redes/testar_kit_selecao.py
+      $SEM python redes/testar_publicar_instagram.py
+      $SEM python redes/testar_conselho.py
+      python redes/marcas.py
+    - |
+      export GUARDA_IDENTIDADE="$(printf '%s' "$GUARDA_IDENTIDADE_B64" | base64 -d)"
+      bash redes/rodar_tarefa.sh

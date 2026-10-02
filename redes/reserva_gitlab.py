@@ -24,7 +24,7 @@ sys.path.insert(0, os.path.expanduser("~/.claude/tools"))
 import cofre  # noqa: E402  (porta única do cofre)
 
 API = "https://gitlab.com/api/v4"
-PROJETO = "86647895"  # zarkatus-mirror/innconta-site
+PROJETO = "zarkatus-mirror%2Fconsultor-redes"  # caminho codificado vale como id na API (02/10/2026; antes 86647895 = innconta-site)
 
 # variável do CI -> (arquivo do cofre, campo). Mapa de interferência no INVENTARIO (adendo 30/09/2026).
 SEGREDOS = {
@@ -35,7 +35,23 @@ SEGREDOS = {
     "OPENROUTER_API_KEY": ("openrouter-cline-free.txt", None),
     "RESEND_API_KEY": ("resend-innconta-site.key", None),
     "REDES_APROVACAO_SECRET": ("redes-aprovacao-secret-innconta.txt", None),
+    # 02/10/2026 (repo público): o que o .gitlab-ci.yml não pode trazer escrito
+    "DADOS_DEPLOY_KEY_B64": ("github-deploy-key-consultor-redes-dados-02out2026.txt", None),  # já em base64 de 1 linha
+    "CVO_EMAIL": ("consultor-redes-cvo-email.txt", None),
 }
+# identidade da guarda (JSON com amostras, dominios_pessoais, nomes): o GitLab só mascara 1 linha sem chaves/aspas,
+# então vai remontada em JSON e codificada em base64 (o job decodifica para GUARDA_IDENTIDADE).
+ARQ_GUARDA = "guarda-identidade-consultor-redes.json"
+
+
+def _guarda_b64():
+    import ast
+    import base64
+    d = {}
+    for campo in ("amostras", "dominios_pessoais", "nomes"):
+        bruto = str.__str__(cofre.valor(ARQ_GUARDA, campo))
+        d[campo] = ast.literal_eval(bruto)  # o helper devolve str(lista); volta a ser lista
+    return base64.b64encode(json.dumps(d, ensure_ascii=False).encode("utf-8")).decode("ascii")
 
 # agendas (UTC; BRT = UTC-3): publicar 08:10, 12:10, 16:10 BRT; conselho 21:20 BRT (franquia do Workers AI renovada)
 AGENDAS = [
@@ -106,6 +122,9 @@ def configurar():
     for chave, (arquivo, campo) in SEGREDOS.items():
         status = _gravar_variavel(chave, str.__str__(cofre.valor(arquivo, campo)))
         print("variável %-24s HTTP status %s" % (chave, status), "sha8", cofre.impressao(arquivo, campo))
+    g = _guarda_b64()
+    print("variável GUARDA_IDENTIDADE_B64   HTTP status %s" % _gravar_variavel("GUARDA_IDENTIDADE_B64", g),
+          "sha8", __import__("hashlib").sha256(g.encode()).hexdigest()[:8])
     status = _gravar_variavel("CLOUDFLARE_ACCOUNT_ID", _account_id_cloudflare(), mascarar=False)
     print("variável CLOUDFLARE_ACCOUNT_ID    HTTP status", status)
     print("variável RESERVA_REDES (desligada) HTTP", _gravar_variavel("RESERVA_REDES", "0", mascarar=False))
