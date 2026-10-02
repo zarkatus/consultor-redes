@@ -16,6 +16,8 @@ Como este código funciona e onde ele morde. Toda entrada leva data e sessão de
 - 02/10/2026 (vigia-cotas-fornecedores): `gh secret set` no Windows com `subprocess.run(..., input=str, text=True)` grava `\r\n` (pipe em modo texto). Chave SSH com CRLF dá `Load key ...: error` e `Permission denied (publickey)` no checkout. Passar **bytes** (`input=valor.encode()`, sem `text=True`).
 - 02/10/2026: o cofre local recusa valor multilinha; a deploy key está lá em base64 de 1 linha (`github-deploy-key-consultor-redes-dados-02out2026.txt`).
 - 02/10/2026: GET na API de um repositório público dá 200 com qualquer token; para provar que um PAT dispara, só o POST `dispatches` (204 x 403).
+- 02/10/2026 (virada): `redes/vigia.py` (`gh_runs`) lê só os runs do PRÓPRIO repo (`GITHUB_REPOSITORY`). No dia em que o Consultor mudou de repo, a 1ª vigia real não achou os runs do dia (estavam no innconta-site) e re-disparou `metricas` e `conselho_diario`, que já tinham rodado. Em nova mudança de repo, faça a virada depois da última tarefa do dia, ou rode a 1ª vigia real só no dia seguinte. Runs em QA não re-disparam nada.
+- 02/10/2026: o pg_cron (`sql/redes-disparo-pg-cron.sql`) só aciona este repo depois que o PAT do disparo (`github_pat_redes_dispatch`, fine-grained) o inclui em Repository access. Editar o PAT pede "Confirm access" (sudo) do dono da conta. O valor do token não muda, então vault e cofre continuam iguais.
 
 ## Rodar local
 `GUARDA_IDENTIDADE` ausente = identidade sintética só no `testar_guarda.py`; as outras baterias precisam da variável (sem ela a guarda barra tudo e o Conselho escala tudo). Dados: clonar o repo privado e ligar `redes/kit`, `redes/estoque`, `img/og` (no Windows, `mklink /J`).
