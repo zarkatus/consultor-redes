@@ -38,6 +38,8 @@ redes:
         publicar|conselho_diario|metricas|renovar_ig) ;;
         *) echo "tarefa fora do escopo da reserva: $TAREFA"; exit 1 ;;
       esac
+    # chave que não abre o banco = falha alta, nunca rodada verde sem gravar (03/10/2026, mesmo passo do GitHub)
+    - bash redes/checar_credencial.sh
     - |
       set -eo pipefail
       if [ "$TAREFA" = "publicar" ]; then
