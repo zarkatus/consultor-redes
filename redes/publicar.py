@@ -142,12 +142,18 @@ def _texto_final(row, peca):
     return row.get("texto_aprovado") or peca.get("_corpo", "")
 
 
+# Falha ao ler o banco segue PAUSANDO (falha fechada: não publica às cegas), mas o processo sai com exit 1 no fim
+# (03/10/2026: secret do banco inválido por 15 h, 5 rodadas "success" sem publicar nada e sem alerta).
+_FALHA_LEITURA = []
+
+
 def pausado():
-    """Chave de parada `ic_segredo.redes_pausa='1'` (PLAYBOOK §7-V-10). Falha ao ler = pausado."""
+    """Chave de parada `ic_segredo.redes_pausa='1'` (PLAYBOOK §7-V-10). Falha ao ler = pausado (e exit 1 no fim)."""
     try:
         return (supa.segredo("redes_pausa") or "").strip() == "1"
     except Exception as e:
         print("não consegui ler ic_segredo.redes_pausa (%s) — tratando como PAUSADO." % e)
+        _FALHA_LEITURA.append(str(e)[:120])
         return True
 
 
@@ -427,7 +433,8 @@ def _ainda_nao_e_a_hora(marca, agora, so_peca_id):
 
 def rodar(marca="innconta", modo_qa=False, so_peca_id=None, agora=None):
     if pausado():
-        print("CHAVE DE PARADA LIGADA (ic_segredo.redes_pausa='1') — nada é publicado.")
+        print("BANCO ILEGÍVEL (credencial ou rede) — nada é publicado; o run sai com falha." if _FALHA_LEITURA
+              else "CHAVE DE PARADA LIGADA (ic_segredo.redes_pausa='1') — nada é publicado.")
         return {"pausado": True, "candidatas": 0, "publicadas": 0, "aguardando_api": 0, "qa": modo_qa}
     if _ainda_nao_e_a_hora(marca, agora, so_peca_id):
         return {"candidatas": 0, "publicadas": 0, "aguardando_api": 0, "qa": modo_qa, "cedo": True}
@@ -505,6 +512,13 @@ if __name__ == "__main__":
     ap.add_argument("--peca-id", default=None)
     a = ap.parse_args()
     if a.marca:
-        print(rodar(a.marca, a.qa, a.peca_id, _agora_brt()))
+        out = {a.marca: rodar(a.marca, a.qa, a.peca_id, _agora_brt())}
+        print(out[a.marca])
     else:
-        print(rodar_todas(a.qa, a.peca_id))
+        out = rodar_todas(a.qa, a.peca_id)
+        print(out)
+    # erro de marca ou de leitura do banco não pode sair verde: o run falha, o vigia e a conferência do disparo veem
+    falhas = [m for m, r in out.items() if isinstance(r, dict) and r.get("erro")]
+    if falhas or _FALHA_LEITURA:
+        print("publicar: FALHOU (marcas com erro: %s; leituras do banco falhas: %d)" % (falhas or "-", len(_FALHA_LEITURA)))
+        sys.exit(1)

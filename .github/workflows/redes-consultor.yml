@@ -185,6 +185,8 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+      - name: Credencial do banco (falha o run se a chave não abre o banco; sem isto tudo saía verde sem gravar, 03/10/2026)
+        run: bash redes/checar_credencial.sh
       - name: Dados privados (kit, estoque e imagens no repo PRIVADO consultor-redes-dados; este repo é público desde 02/10/2026)
         uses: actions/checkout@v4
         with:
@@ -321,6 +323,8 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+      - name: Credencial do banco (falha o run se a chave não abre o banco; sem isto tudo saía verde sem gravar, 03/10/2026)
+        run: bash redes/checar_credencial.sh
       - name: Dados privados (kit, estoque e imagens no repo PRIVADO consultor-redes-dados; este repo é público desde 02/10/2026)
         uses: actions/checkout@v4
         with:
