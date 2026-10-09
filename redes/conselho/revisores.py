@@ -124,7 +124,9 @@ def construir_prompt(papel, regras=None):
             "Reprove se a peca tiver QUALQUER um destes: (1) palavra ou disfarce proibido pelo grupo (ver regras comuns); "
             "(2) vocabulario proibido da marca: %(proibidos)s; (3) giria, emoji, frase motivacional, tom de vendedor ou de manual "
             "que manda o leitor fazer algo (uma chamada final para salvar, compartilhar ou comentar NAO e defeito); "
-            "(4) mais de um travessao; %(extras)s Frases com elipse, curtas e carregadas sao o padrao. " % c
+            "(4) mais de um travessao; %(extras)s Frases com elipse, curtas e carregadas sao o padrao. "
+            "NUNCA reprove pela chamada final para salvar, compartilhar ou comentar (ex.: 'Salve este post para consultar "
+            "depois.'): ela e OBRIGATORIA pela regra de alcance da marca e reprovar por ela trava a peca em laco. " % c
             + grupo + " ") + _FORMATO
     if papel == "risco":
         extra = ""

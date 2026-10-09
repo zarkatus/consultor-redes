@@ -785,6 +785,8 @@ try:
     checar("regras comuns do grupo em toda marca (casa, agente/bot, emoji)",
            all(t in revisores.construir_prompt("voz", marcas.carregar("innovasphere")) for t in ("'casa'", "agente", "emoji")), True)
     checar("fato: prompt manda conferir tambem o TEXTO DA ARTE", "TEXTO DA ARTE" in revisores.construir_prompt("fato", R_IC), True)
+    # 09/10/2026: voz reprovava o CTA que o alcance exige -> laco redator/guarda ate escalar (4 pecas InnConta)
+    checar("voz: CTA final de salvar nunca reprova (alcance exige)", "NUNCA reprove pela chamada final" in revisores.construir_prompt("voz", R_IC), True)
 
     print("-- fato com fonte da marca: dominios_origem + fontes_oficiais_extra baixados AO VIVO; outro dominio nao --")
     baixados = []
