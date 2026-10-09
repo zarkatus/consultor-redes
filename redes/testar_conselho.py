@@ -789,7 +789,7 @@ try:
     print("-- fato com fonte da marca: dominios_origem + fontes_oficiais_extra baixados AO VIVO; outro dominio nao --")
     baixados = []
     _tp = insumos.texto_da_pagina
-    insumos.texto_da_pagina = lambda url, timeout=30, dominios=None, limite=None: (baixados.append(url) or "texto de " + url) \
+    insumos.texto_da_pagina = lambda url, timeout=30, dominios=None, limite=None, inteiro=False: (baixados.append(url) or "texto de " + url) \
         if insumos._host_ok(url, list(dominios or [])) else ""
     try:
         R_SF = marcas.carregar("innovasphere")
