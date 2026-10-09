@@ -246,6 +246,8 @@ jobs:
         run: python redes/quieto.py testar_relatorio_mensal -- python redes/testar_relatorio_mensal.py
       - name: Bateria do Conselho Editorial (mock, sem rede — unanimidade, redator, 3 voltas, malformado, parada, orçamento)
         run: python redes/quieto.py testar_conselho -- python redes/testar_conselho.py
+      - name: Bateria dos insumos do revisor FATO (sem rede — recorte no artigo citado, charset windows-1252)
+        run: python redes/quieto.py testar_insumos -- python redes/testar_insumos.py
       - name: Bateria da arte sob demanda (mock — PNG ausente renderiza ou não publica; trava de arte por marca)
         run: python redes/quieto.py testar_arte_sob_demanda -- python redes/testar_arte_sob_demanda.py
       - name: Bateria do artigo como fonte (mock — detector idempotente, prioridade no gerador, sincronia com o Conselho, site fora do ar)

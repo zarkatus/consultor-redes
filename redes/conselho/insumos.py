@@ -58,7 +58,8 @@ def texto_da_pagina(url, timeout=30, dominios=None, limite=None, inteiro=False):
     if url not in _CACHE:
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (innconta-consultor-redes)"})
-            _CACHE[url] = urllib.request.urlopen(req, timeout=timeout).read().decode("utf-8", "replace")
+            resp = urllib.request.urlopen(req, timeout=timeout)
+            _CACHE[url] = _decodificar(resp.read(), resp.headers.get_content_charset())
         except Exception as e:
             print("origem indisponivel (%s): %s" % (url, e))
             _CACHE[url] = ""
@@ -75,16 +76,54 @@ def texto_da_pagina(url, timeout=30, dominios=None, limite=None, inteiro=False):
     return s if inteiro else s[:limite or LIMITE_CHARS_ORIGEM]
 
 
+def _decodificar(bruto, charset=None):
+    """Bytes -> texto no charset declarado (cabecalho HTTP, senao <meta charset>), UTF-8 por padrao. O planalto.gov.br
+    serve windows-1252 sem declarar charset: lido como UTF-8, todo acento virava U+FFFD e "art. 1º" deixava de casar (09/10/2026)."""
+    if not charset:
+        m = re.search(rb"<meta[^>]+charset=[\"']?([A-Za-z0-9_\-]+)", bruto[:4096], re.I)
+        charset = m.group(1).decode("ascii") if m else None
+    if not charset:  # nada declarado (caso do planalto): UTF-8 se for valido, senao windows-1252
+        try:
+            return bruto.decode("utf-8")
+        except UnicodeDecodeError:
+            return bruto.decode("windows-1252", "replace")
+    try:
+        return bruto.decode(charset, "replace")
+    except LookupError:
+        return bruto.decode("utf-8", "replace")
+
+
+def recorte_dos_artigos(texto, norma, limite=LIMITE_CHARS_FONTE):
+    """Trecho da pagina em volta de CADA artigo citado em `norma` ("art. 104", "arts. 31 e 34, II"), repartindo o
+    `limite`. Sem artigo citado ou sem achar nenhum, devolve o comeco (comportamento antigo). Por que (09/10/2026): o
+    Codigo Civil compilado tem ~630 mil caracteres; o revisor FATO recebia so os primeiros 6 mil e reprovava todo
+    artigo alem disso como "nao esta na fonte" (31 pecas da InnConta recusadas de 12/10 a 30/11)."""
+    nums = []
+    for bloco in re.findall(r"\barts?\.?\s*((?:\d+[\s,e]*)+)", str(norma or ""), re.I):
+        nums += [n for n in re.findall(r"\d+", bloco) if n not in nums]
+    if not nums:
+        return texto[:limite]
+    fatia = max(800, limite // len(nums))
+    partes = []
+    for n in nums:
+        m = re.search(r"\bArt\.?\s*%s\s*(?:[º°o]|\.|-|\s)" % n, texto)
+        if m:
+            partes.append(texto[max(0, m.start() - 80):m.start() + fatia])
+    return " [...] ".join(partes)[:limite] if partes else texto[:limite]
+
+
 def texto_das_fontes(fontes, dominios, ja_baixadas=()):
     """Texto AO VIVO das `fontes[].url` cujo dominio esta na lista permitida da marca (proprio + oficiais extras).
-    Devolve [(url, texto)] — ate MAX_FONTES_AO_VIVO, sem repetir o que a pagina de origem ja trouxe."""
+    Devolve [(url, texto)] — ate MAX_FONTES_AO_VIVO, sem repetir o que a pagina de origem ja trouxe. Com `norma`
+    citando artigo, o texto e o recorte em volta do artigo (recorte_dos_artigos), nao o comeco da pagina."""
     out = []
     for f in fontes or []:
         u = ((f or {}).get("url") or "").strip()
         if not u or u in ja_baixadas or not _host_ok(u, dominios):
             continue
         if u not in [x[0] for x in out]:
-            out.append((u, texto_da_pagina(u, dominios=dominios, limite=LIMITE_CHARS_FONTE)))
+            inteiro = texto_da_pagina(u, dominios=dominios, inteiro=True)
+            out.append((u, recorte_dos_artigos(inteiro, (f or {}).get("norma"))))
         if len(out) >= MAX_FONTES_AO_VIVO:
             break
     return out
