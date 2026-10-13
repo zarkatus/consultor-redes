@@ -59,6 +59,7 @@ import guarda  # noqa: E402
 import marcas  # noqa: E402
 import publicar_instagram  # noqa: E402
 import publicar_linkedin  # noqa: E402
+import quieto  # noqa: E402
 import renderizar_pendentes  # noqa: E402
 import supa  # noqa: E402
 
@@ -427,6 +428,8 @@ def _ainda_nao_e_a_hora(marca, agora, so_peca_id):
     if minutos < limite:
         print("marca %s: ainda nao e a hora (%02d:%02d BRT; publica a partir de %02d:%02d) — nada a fazer nesta rodada."
               % (marca, agora.hour, agora.minute, limite // 60, limite % 60))
+        quieto.anotar("publicar marca=%s estado=cedo agora=%02d:%02d a_partir=%02d:%02d"
+                      % (marca, agora.hour, agora.minute, limite // 60, limite % 60))
         return True
     return False
 
@@ -435,6 +438,7 @@ def rodar(marca="innconta", modo_qa=False, so_peca_id=None, agora=None):
     if pausado():
         print("BANCO ILEGÍVEL (credencial ou rede) — nada é publicado; o run sai com falha." if _FALHA_LEITURA
               else "CHAVE DE PARADA LIGADA (ic_segredo.redes_pausa='1') — nada é publicado.")
+        quieto.anotar("publicar marca=%s estado=%s" % (marca, "banco_ilegivel" if _FALHA_LEITURA else "pausado"))
         return {"pausado": True, "candidatas": 0, "publicadas": 0, "aguardando_api": 0, "qa": modo_qa}
     if _ainda_nao_e_a_hora(marca, agora, so_peca_id):
         return {"candidatas": 0, "publicadas": 0, "aguardando_api": 0, "qa": modo_qa, "cedo": True}
@@ -483,6 +487,8 @@ def rodar(marca="innconta", modo_qa=False, so_peca_id=None, agora=None):
     if sem_token:
         resultado["sem_token"] = sem_token
     print("publicar[%s]:" % marca, resultado)
+    quieto.anotar("publicar marca=%s estado=rodou candidatas=%d publicadas=%d aguardando_api=%d sem_token=%d"
+                  % (marca, len(candidatas), publicadas, aguardando_api, sem_token))
     return resultado
 
 
@@ -500,6 +506,7 @@ def rodar_todas(modo_qa=False, so_peca_id=None, agora=None):
         except Exception as e:
             print("publicar[%s] FALHOU (segue nas demais): %s: %s" % (m, type(e).__name__, str(e)[:200]))
             out[m] = {"erro": str(e)[:200]}
+            quieto.anotar("publicar marca=%s estado=erro tipo=%s" % (m, type(e).__name__.lower()))
     print("publicar (todas as marcas):", out)
     return out
 
