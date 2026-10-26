@@ -15,6 +15,7 @@ Como este código funciona e onde ele morde. Toda entrada leva data e sessão de
 - **Inputs do workflow entram por env** (`TAREFA`, `IN_QA`, `IN_MES_REF`, `IN_PECA_ID`, `IN_LOTE_JSON`, `IN_MARCA`) em `redes/rodar_tarefa.sh`; nunca interpolar `${{ }}` dentro de script (injeção).
 
 ## Armadilhas
+- 26/10/2026 (sessao perenidade-trabalhos): **legenda da InnConta nomeia a pasta.** `publicar._com_pasta` insere "Pasta InnConta: <nome>" como 2o paragrafo (slug de `nota_origem` ou do link no corpo; mapa `_PASTAS`; marca/peca sem pasta fica intacta; idempotente porque `achar_post_recente` compara legenda). Pasta nova no site = linha nova em `_PASTAS` (senao cai no slug capitalizado). Duplicata de 22-23/10 (split payment 15x, Codigo Civil 5x) veio ANTES do teto diario (c3ba5a9, 25/10); a Graph API nao apaga post, as sobras saem so no app.
 - 02/10/2026 (vigia-cotas-fornecedores): `gh secret set` no Windows com `subprocess.run(..., input=str, text=True)` grava `\r\n` (pipe em modo texto). Chave SSH com CRLF dá `Load key ...: error` e `Permission denied (publickey)` no checkout. Passar **bytes** (`input=valor.encode()`, sem `text=True`).
 - 02/10/2026: o cofre local recusa valor multilinha; a deploy key está lá em base64 de 1 linha (`github-deploy-key-consultor-redes-dados-02out2026.txt`).
 - 02/10/2026: GET na API de um repositório público dá 200 com qualquer token; para provar que um PAT dispara, só o POST `dispatches` (204 x 403).
