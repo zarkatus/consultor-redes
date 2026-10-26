@@ -45,6 +45,7 @@ ver redes/testar_kit_selecao.py). --peca-id força uma peça específica, ignora
 data (override manual/QA, mesmo padrão do extinto kit_roveda.py)."""
 import datetime
 import os
+import re
 import sys
 import urllib.parse
 
@@ -142,6 +143,39 @@ def _texto_final(row, peca):
     redator — o checkout do Actions é efêmero, então a versão final mora no banco) ou, para peça
     aprovada antes do conselho existir, o corpo do estoque."""
     return row.get("texto_aprovado") or peca.get("_corpo", "")
+
+
+# Pasta (frente) da InnConta no Instagram (CVO 26/10/2026: "sem informar a que pasta aquele post pertence").
+# O selo da arte ja nomeia a pasta; a legenda tinha o nome so as vezes (so o link em varias pecas).
+_PASTAS = {"fiscal": "Fiscal", "juridico": "Jurídico", "energia": "Energia", "recebiveis": "Recebíveis",
+           "contas-consumo": "Contas de consumo", "reg-tributaria": "Regularização tributária", "passivo": "Passivo",
+           "reg-imobiliaria": "Regularização imobiliária", "patrimonial": "Patrimonial", "compras": "Compras",
+           "territorio": "Território", "folha": "Folha", "conformidade": "Conformidade",
+           "recovery": "Recuperação de ativos", "construcao": "Construção e execução de obra", "engenharia": "Engenharia"}
+_FRENTE_NO_TEXTO = re.compile(r"innconta\.com\.br/frente/([a-z0-9\-]+)", re.I)
+
+
+def _pasta_da_peca(peca, texto):
+    """Nome da pasta da peca (slug em `nota_origem` ou no link do corpo) — ou None (feriado/data comemorativa)."""
+    for fonte in (str(peca.get("nota_origem") or ""), texto or ""):
+        m = _FRENTE_NO_TEXTO.search(fonte)
+        if m:
+            slug = m.group(1).lower()
+            return _PASTAS.get(slug) or slug.replace("-", " ").capitalize()
+    return None
+
+
+def _com_pasta(texto, peca, marca):
+    """InnConta/Instagram: a legenda diz a pasta logo apos o gancho (2o paragrafo). Idempotente: se a linha
+    ja existe, nao repete (reconciliacao `achar_post_recente` compara com este mesmo texto)."""
+    if marca != "innconta" or not texto or "Pasta InnConta:" in texto:
+        return texto
+    pasta = _pasta_da_peca(peca, texto)
+    if not pasta:
+        return texto
+    linha = "📂 Pasta InnConta: %s" % pasta
+    partes = texto.split("\n\n", 1)
+    return partes[0] + "\n\n" + linha + ("\n\n" + partes[1] if len(partes) > 1 else "")
 
 
 # Falha ao ler o banco segue PAUSANDO (falha fechada: não publica às cegas), mas o processo sai com exit 1 no fim
@@ -379,7 +413,7 @@ def publicar_via_instagram(marca, row):
         imagem, video, capa = _midia_da_peca(marca, row["peca_id"], peca)
     extras, parceiros_collab = _extras_de_alcance(marca, row, peca, video=bool(video))
     try:
-        texto = _texto_final(row, peca)[:2200]
+        texto = _com_pasta(_texto_final(row, peca), peca, marca)[:2200]
         resultado = publicar_instagram.publicar(texto, caminho_imagem=imagem,
                                                   caminho_video=video, capa_local=capa, marca=marca,
                                                   nome_arquivo=row["peca_id"] if quadros else None,
