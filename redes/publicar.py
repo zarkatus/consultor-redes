@@ -46,6 +46,7 @@ data (override manual/QA, mesmo padrão do extinto kit_roveda.py)."""
 import datetime
 import os
 import sys
+import urllib.parse
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 RAIZ = os.path.dirname(os.path.abspath(__file__))
@@ -378,7 +379,8 @@ def publicar_via_instagram(marca, row):
         imagem, video, capa = _midia_da_peca(marca, row["peca_id"], peca)
     extras, parceiros_collab = _extras_de_alcance(marca, row, peca, video=bool(video))
     try:
-        resultado = publicar_instagram.publicar(_texto_final(row, peca)[:2200], caminho_imagem=imagem,
+        texto = _texto_final(row, peca)[:2200]
+        resultado = publicar_instagram.publicar(texto, caminho_imagem=imagem,
                                                   caminho_video=video, capa_local=capa, marca=marca,
                                                   nome_arquivo=row["peca_id"] if quadros else None,
                                                   caminhos_carrossel=quadros, **extras)
@@ -388,6 +390,12 @@ def publicar_via_instagram(marca, row):
             return "sem_token"
         return "aguardando_api" if _marcar_aguardando_api(row) else "falhou"
     except publicar_instagram.PublicacaoFalhou as e:
+        url_post = publicar_instagram.achar_post_recente(texto, marca)
+        if url_post:
+            # a API disse erro mas o post saiu (26/10/2026): sela, senão a rodada seguinte duplica
+            print("publicação Instagram deu erro (%s) mas o post está no perfil — selando: %s -> %s"
+                  % (str(e)[:120], row["peca_id"], url_post))
+            return "publicado" if _selar_publicada(row, url_post, "erro_api_mas_publicou: %s" % str(e)[:120], espera_s=0) else "falhou"
         print("publicação Instagram falhou para", row["peca_id"], ":", e, "— tenta de novo na próxima rodada.")
         return "falhou"
     try:
@@ -434,6 +442,33 @@ def _ainda_nao_e_a_hora(marca, agora, so_peca_id):
     return False
 
 
+def limitar_ao_teto_diario(candidatas, teto, ja_hoje):
+    """Regra pura (sem rede): no máximo `teto` posts de Instagram por dia por marca, contando os `ja_hoje`.
+    As mais antigas saem primeiro (candidatas vêm ordenadas por data). LinkedIn não entra no teto.
+    teto <= 0 = sem teto. Devolve (candidatas, quantas ficaram para depois). Por quê (26/10/2026): o token
+    da incorpmine voltou depois de 5 dias e o atraso inteiro saiu numa rodada — 16 posts em 19 min."""
+    if teto <= 0:
+        return candidatas, 0
+    vagas = max(0, teto - ja_hoje)
+    out, adiadas = [], 0
+    for c in candidatas:
+        if (c.get("canal") or "") == "instagram":
+            if vagas <= 0:
+                adiadas += 1
+                continue
+            vagas -= 1
+        out.append(c)
+    return out, adiadas
+
+
+def _instagram_publicadas_hoje(marca, hoje):
+    """Posts de Instagram da marca já selados no dia BRT `hoje` (00:00 BRT = 03:00 UTC)."""
+    inicio = datetime.datetime.combine(hoje, datetime.time(3, 0), tzinfo=datetime.timezone.utc).isoformat()
+    linhas = supa.select("ic_redes_publicacao", "marca=eq.%s&canal=eq.instagram&publicado_em=gte.%s&select=id"
+                         % (marca, urllib.parse.quote(inicio)))
+    return len(linhas or [])
+
+
 def rodar(marca="innconta", modo_qa=False, so_peca_id=None, agora=None):
     if pausado():
         print("BANCO ILEGÍVEL (credencial ou rede) — nada é publicado; o run sai com falha." if _FALHA_LEITURA
@@ -459,6 +494,12 @@ def rodar(marca="innconta", modo_qa=False, so_peca_id=None, agora=None):
         )
         # defesa em profundidade: reaplica a regra pura no cliente (nunca confiar só na query).
         candidatas = [c for c in candidatas if elegivel_para_publicar(c, hoje)]
+        teto = int(marcas.carregar(marca)["publicar"].get("max_por_dia") or 0)
+        ja_hoje = _instagram_publicadas_hoje(marca, hoje)
+        candidatas, adiadas = limitar_ao_teto_diario(candidatas, teto, ja_hoje)
+        if adiadas:
+            print("teto diário de %s: %d post(s) por dia, %d já hoje — %d peça(s) vencida(s) ficam para os próximos dias"
+                  % (marca, teto, ja_hoje, adiadas))
 
     publicadas, aguardando_api, sem_token = 0, 0, 0
     for row in candidatas:

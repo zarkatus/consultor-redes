@@ -5,7 +5,7 @@ Uma entidade e uma empresa do grupo OU um empreendimento (bairro planejado, cond
 `redes/kit/<marca>/regras.json` e a unica fonte. Contrato (campo ausente = default seguro):
   marca, tipo ("empresa"|"empreendimento"), pai (opcional, empresa dona), nome, site,
   dominios_origem[], handle_instagram, ig_user_id,
-  publicar{instagram, linkedin, horario_brt}, voz{tom, proibidos[], preferidos[]},
+  publicar{instagram, linkedin, horario_brt, max_por_dia (posts de Instagram por dia; default 1, 0 = sem teto)}, voz{tom, proibidos[], preferidos[]},
   temas[], palavras_chave[], hashtags[], fontes_oficiais_extra[],
   discricao{sigilo, nao_citar[]}, collab{parceiros[], max_por_semana}, email_escalada.
 
@@ -26,7 +26,7 @@ HORARIO_PADRAO = "09:00"
 _PADRAO = {
     "marca": "", "tipo": "empresa", "pai": None, "nome": "", "site": "", "dominios_origem": [],
     "handle_instagram": "", "ig_user_id": "",
-    "publicar": {"instagram": False, "linkedin": False, "horario_brt": HORARIO_PADRAO},
+    "publicar": {"instagram": False, "linkedin": False, "horario_brt": HORARIO_PADRAO, "max_por_dia": 1},
     "voz": {"tom": "", "proibidos": [], "preferidos": []},
     "temas": [], "palavras_chave": [], "hashtags": [], "fontes_oficiais_extra": [],
     "discricao": {"sigilo": False, "nao_citar": []},

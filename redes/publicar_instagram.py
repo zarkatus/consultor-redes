@@ -62,6 +62,7 @@ mecanismo funciona (contêiner real criado e `FINISHED`) sem publicar nada de ve
 
 IG_USER_ID é o id numérico da conta Instagram Business (`innconta.oficial`), não segredo —
 variável do repo (GitHub Variable), não Secret."""
+import datetime
 import json
 import mimetypes
 import os
@@ -302,6 +303,32 @@ def contar_posts_publicados(marca="innconta"):
         total += len(info.get("data") or [])
         url = (info.get("paging") or {}).get("next")
     return total
+
+
+def _legenda_normalizada(texto):
+    return " ".join((texto or "").split())[:120]
+
+
+def achar_post_recente(texto, marca="innconta", horas=3, agora=None):
+    """Permalink de um post da conta, publicado nas ultimas `horas`, cuja legenda comeca igual a `texto`
+    (espaco normalizado, 120 caracteres) — ou None. Reconciliacao (26/10/2026): `media_publish` pode
+    devolver erro e o post sair mesmo assim (rajada de 16 posts da incorpmine em 19 min, 5 sairam no
+    perfil com a rodada marcando 'falhou'; sem selar, a rodada seguinte postaria de novo). Nunca levanta:
+    qualquer falha de leitura vira None (o chamador segue o caminho de 'falhou' de sempre)."""
+    alvo = _legenda_normalizada(texto)
+    if not alvo:
+        return None
+    try:
+        agora = agora or datetime.datetime.now(datetime.timezone.utc)
+        info = _get(GRAPH_BASE + "/" + _ig_user_id(marca) + "/media?fields=caption,timestamp,permalink&limit=25&access_token="
+                    + _token(marca))
+        for m in info.get("data") or []:
+            quando = datetime.datetime.strptime(m.get("timestamp", ""), "%Y-%m-%dT%H:%M:%S%z")
+            if (agora - quando).total_seconds() <= horas * 3600 and _legenda_normalizada(m.get("caption")) == alvo:
+                return m.get("permalink") or m.get("id")
+    except Exception as e:
+        print("  reconciliacao: nao li o perfil (%s)" % str(e)[:120])
+    return None
 
 
 def criar_container_carrossel(texto, caminhos_quadros, nome_base=None, marca="innconta", alt_text=None, collaborators=None):
