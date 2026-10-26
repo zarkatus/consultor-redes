@@ -19,6 +19,9 @@ FALHAS = []
 # os mocks abaixo declaram `imagem` com caminho fictício (= "a peça tem imagem"); o portão da arte sob demanda
 # (PNG ausente -> renderiza ou não publica) tem a prova dele em redes/testar_arte_sob_demanda.py.
 publicar.arte_sob_demanda.garantir = lambda *a, **k: []
+# reconciliacao (26/10/2026) le o perfil na API: fora do cenario dela, 'nada no perfil' (sem rede)
+_achar_original = publicar_instagram.achar_post_recente
+publicar_instagram.achar_post_recente = lambda *a, **k: None
 
 
 def checar(nome, got, esperado):
@@ -374,10 +377,50 @@ finally:
     publicar.estoque.ler, publicar_instagram.publicar = _ler_original, _publicar_original
     publicar.supa.patch, publicar.supa.rpc = _patch_original, _rpc_original
 
+print("\n== reconciliacao (26/10/2026): API deu erro MAS o post saiu -> sela com o permalink, nunca deixa "
+      "para a rodada seguinte duplicar ==")
+chamadas_rpc = []
+publicar.estoque.ler = lambda *a, **k: {"_corpo": "texto de teste", "imagem": "estoque/innconta/qa/teste.png"}
+publicar_instagram.publicar = lambda *a, **k: (_ for _ in ()).throw(publicar_instagram.PublicacaoFalhou("mock 400 rate limit"))
+publicar_instagram.achar_post_recente = lambda texto, marca, **k: "https://www.instagram.com/p/QA-RECONCILIA/"
+publicar.supa.rpc = lambda *a, **k: (chamadas_rpc.append((a, k)) or {"ok": True})
+try:
+    r = publicar.publicar_via_instagram("innconta", ROW_INSTAGRAM)
+    checar("erro da API + post no perfil -> 'publicado'", r, "publicado")
+    checar("erro da API + post no perfil -> redes_decidir com o permalink achado",
+           [c[0][1].get("p_url_post") for c in chamadas_rpc], ["https://www.instagram.com/p/QA-RECONCILIA/"])
+finally:
+    publicar.estoque.ler = _ler_original
+    publicar_instagram.publicar = _publicar_original
+    publicar_instagram.achar_post_recente = lambda *a, **k: None
+    publicar.supa.rpc = _rpc_original
+
+print("\n== achar_post_recente (regra, API mockada): so casa legenda igual E dentro da janela ==")
+_get_o, _uid_o, _tok_o = publicar_instagram._get, publicar_instagram._ig_user_id, publicar_instagram._token
+publicar_instagram._ig_user_id = lambda m: "qa-uid"
+publicar_instagram._token = lambda m: "qa-token"
+AGORA = datetime.datetime(2026, 10, 26, 1, 10, tzinfo=datetime.timezone.utc)
+publicar_instagram._get = lambda url: {"data": [
+    {"caption": "Outra peca qualquer", "timestamp": "2026-10-26T01:08:30+0000", "permalink": "P-OUTRA"},
+    {"caption": "Legenda   da peca\ncom quebra", "timestamp": "2026-10-26T01:05:01+0000", "permalink": "P-CERTA"},
+    {"caption": "Legenda antiga", "timestamp": "2026-10-20T12:00:00+0000", "permalink": "P-VELHA"}]}
+try:
+    checar("legenda igual (espaco normalizado), 5 min atras -> permalink",
+           _achar_original("Legenda da peca com quebra", "qa", agora=AGORA), "P-CERTA")
+    checar("controle NEGATIVO: legenda igual mas de 6 dias atras -> None",
+           _achar_original("Legenda antiga", "qa", agora=AGORA), None)
+    checar("controle NEGATIVO: legenda que nao esta no perfil -> None",
+           _achar_original("Peca que nunca saiu", "qa", agora=AGORA), None)
+    publicar_instagram._get = lambda url: (_ for _ in ()).throw(publicar_instagram.PublicacaoFalhou("HTTP 500"))
+    checar("controle NEGATIVO: API fora -> None (nunca levanta)",
+           _achar_original("Legenda da peca com quebra", "qa", agora=AGORA), None)
+finally:
+    publicar_instagram._get, publicar_instagram._ig_user_id, publicar_instagram._token = _get_o, _uid_o, _tok_o
+
 print("\n===")
 if FALHAS:
     print("FALHOU (%d):" % len(FALHAS))
     for f in FALHAS:
         print(" -", f)
     sys.exit(1)
-print("TODAS AS PROVAS PASSARAM (5 cenários de publicar_via_instagram + 1 de despacho por canal em rodar()).")
+print("TODAS AS PROVAS PASSARAM (5 cenários de publicar_via_instagram + 1 de despacho por canal em rodar() + reconciliação erro-mas-publicou).")

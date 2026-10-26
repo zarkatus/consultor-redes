@@ -79,10 +79,26 @@ print(("OK  " if len(elegiveis) == 0 else "FALHA") + " - 12 peças de outubro ->
 if len(elegiveis) != 0:
     FALHAS.append("cenário real das 12 peças de outubro deveria dar 0 elegíveis")
 
+print("\n== teto diario (26/10/2026): atraso de 16 pecas nunca sai em rajada ==")
+IG = lambda i: {"id": "ig%d" % i, "canal": "instagram"}
+LI = {"id": "li", "canal": "linkedin_pagina"}
+casos = [
+    ("16 vencidas, teto 1, 0 hoje -> sai 1 (a mais antiga)", ([IG(i) for i in range(16)], 1, 0), (["ig0"], 15)),
+    ("teto 1 e ja saiu 1 hoje -> sai 0", ([IG(0), IG(1)], 1, 1), ([], 2)),
+    ("LinkedIn nao entra no teto", ([IG(0), LI, IG(1)], 1, 0), (["ig0", "li"], 1)),
+    ("controle NEGATIVO: teto 0 = sem teto (comportamento antigo)", ([IG(i) for i in range(3)], 0, 5), (["ig0", "ig1", "ig2"], 0)),
+]
+for nome, (cands, teto, ja), (ids_esp, adiadas_esp) in casos:
+    got, adiadas = publicar.limitar_ao_teto_diario(cands, teto, ja)
+    ok = [c["id"] for c in got] == ids_esp and adiadas == adiadas_esp
+    print(("OK  " if ok else "FALHA") + " - %s -> %s, adiadas=%d" % (nome, [c["id"] for c in got], adiadas))
+    if not ok:
+        FALHAS.append(nome)
+
 print("\n===")
 if FALHAS:
     print("FALHOU (%d):" % len(FALHAS))
     for f in FALHAS:
         print(" -", f)
     sys.exit(1)
-print("TODAS AS PROVAS PASSARAM (2 positivas, 5 negativas + reprodução do cenário real das 12 peças de outubro).")
+print("TODAS AS PROVAS PASSARAM (2 positivas, 5 negativas + reprodução do cenário real das 12 peças de outubro + 4 de teto diário).")
