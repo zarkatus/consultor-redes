@@ -117,6 +117,14 @@ def _midia_da_peca(marca, peca_id, peca):
     return None, alvo["arquivo_stories"], alvo["capa"]
 
 
+def _so_carrossel(marca):
+    """regras.json `instagram_so_carrossel: true` -> a marca só publica carrossel no Instagram (09/11/2026)."""
+    try:
+        return bool(marcas.carregar(marca).get("instagram_so_carrossel"))
+    except Exception:
+        return False
+
+
 def _eh_carrossel(peca):
     """Peça com `formato: carrossel` E uma lista `quadros` (24/09/2026, PLAYBOOK §7-V-11)."""
     quadros = peca.get("quadros")
@@ -393,6 +401,12 @@ def publicar_via_instagram(marca, row):
         peca = estoque.ler(estoque.caminho(marca, row["peca_id"]))
     except FileNotFoundError:
         print("peça sem arquivo local, não publica:", row["peca_id"])
+        return "falhou"
+    # 09/11/2026 (fio instagram-vendas): marca com `instagram_so_carrossel: true` no regras.json só publica
+    # carrossel; peça de imagem única ou vídeo não sai (incorpbuilding publicou imagem única em 07/11).
+    if _so_carrossel(marca) and not _eh_carrossel(peca):
+        print("marca só publica carrossel no Instagram (regras.json instagram_so_carrossel), não publica: %s (formato %s)"
+              % (row["peca_id"], peca.get("formato")))
         return "falhou"
     motivos_arte = guarda.checar_arte(peca, marca)
     if motivos_arte:

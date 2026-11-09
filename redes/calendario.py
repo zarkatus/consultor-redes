@@ -94,6 +94,10 @@ def montar(marca, mes_ref, destino_email=None, diario=False, agora=None):
         "ic_redes_publicacao",
         "marca=eq.%s&status=eq.aprovado&data_publicacao=is.null&tipo=neq.video&select=*&order=criado_em" % marca,
     )
+    # 09/11/2026: marca com `instagram_so_carrossel` não agenda peça de Instagram que não seja carrossel
+    # (o publicador recusaria no dia e o dia ficaria vazio).
+    if marcas.carregar(marca).get("instagram_so_carrossel"):
+        candidatas = [c for c in candidatas if c.get("canal") != "instagram" or c.get("formato") == "carrossel"]
     if not linkedin_token_disponivel:
         antes = len(candidatas)
         candidatas = [c for c in candidatas

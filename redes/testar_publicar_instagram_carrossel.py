@@ -259,6 +259,17 @@ try:
     pub.estoque.ler = lambda c: dict(peca_ok, quadros=quadros_reais + ["redes/nao-existe.png"], _corpo="texto")
     r = pub.publicar_via_instagram("innconta", {"id": "u", "peca_id": "p1", "texto_aprovado": "texto"})
     checar("NEGATIVO: quadro ausente -> falhou, e nem chamou o publicador", (r, visto), ("falhou", {}))
+    # 09/11/2026: instagram_so_carrossel
+    _carregar = pub.marcas.carregar
+    pub.marcas.carregar = lambda m: {"instagram_so_carrossel": True}
+    visto.clear()
+    pub.estoque.ler = lambda c: {"formato": "feed", "quadros": None, "_corpo": "texto"}
+    r = pub.publicar_via_instagram("x", {"id": "u", "peca_id": "p2", "texto_aprovado": "texto"})
+    checar("NEGATIVO: so_carrossel + imagem unica -> falhou, sem chamar o publicador", (r, visto), ("falhou", {}))
+    pub.marcas.carregar = lambda m: {"instagram_so_carrossel": True} if m == "x" else _carregar(m)
+    checar("so_carrossel + carrossel passa a trava", pub._so_carrossel("x") and pub._eh_carrossel(peca_ok), True)
+    checar("marca sem a chave nao e afetada", pub._so_carrossel("innconta"), False)
+    pub.marcas.carregar = _carregar
 finally:
     pub.estoque.ler = _ler
 
