@@ -81,6 +81,7 @@ import supa  # noqa: E402
 GRAPH_VERSION = "v21.0"
 GRAPH_BASE = "https://graph.instagram.com/" + GRAPH_VERSION
 BUCKET = "redes-publico"
+URL_PUBLICA_BASE = os.environ.get("REDES_URL_PUBLICA_BASE", "https://rodizio.innovasphere.ia.br")
 
 # Reels: polling do processamento do vídeo — intervalo curto o bastante para não segurar o
 # job por muito tempo, teto generoso o bastante para vídeos curtos (<=90s, PLAYBOOK §7-V)
@@ -180,7 +181,10 @@ def _subir_midia_supabase(caminho_local, nome_arquivo, pasta="instagram"):
         urllib.request.urlopen(req, timeout=120)
     except urllib.error.HTTPError as e:
         raise PublicacaoFalhou("upload pro bucket redes-publico HTTP %d: %s" % (e.code, e.read()[:300]))
-    url_publica = supa.URL + "/storage/v1/object/public/" + BUCKET + "/" + caminho_remoto
+    # 11/11/2026 (CVO: zero consumo do Supabase): a Meta (facebookexternalhit) baixava a MESMA imagem ~21x direto do Storage, sem cache.
+    # O upload continua aqui (a Graph API so aceita URL), mas a URL entregue a Meta e a do Worker midia-rodizio, que serve do cache/rodizio
+    # e so le a origem na 1a vez (`ORIGEM_PROPRIA['redes-publico']` no worker.js). Remocao/listagem seguem pela origem.
+    url_publica = URL_PUBLICA_BASE + "/o/" + BUCKET + "/" + urllib.parse.quote(caminho_remoto)
     return url_publica, caminho_remoto
 
 
