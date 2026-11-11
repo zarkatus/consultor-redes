@@ -20,7 +20,7 @@ workflow:
 variables:
   GIT_DEPTH: "1"
   TAREFA: "publicar"   # a agenda ou o disparo troca: publicar | conselho_diario | metricas (prova sem efeito) | renovar_ig
-  SB_URL: "https://gprkopmqhocsslrdmebm.supabase.co"
+  SB_URL: "https://dados.innovasphere.ia.br/gprkopmqhocsslrdmebm"
   BASE_URL: "https://innconta.com.br"
 
 redes:
