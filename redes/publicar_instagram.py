@@ -505,7 +505,7 @@ if __name__ == "__main__":
     a = ap.parse_args()
 
     if a.mock:
-        fake_url = "https://exemplo.supabase.co/storage/v1/object/public/redes-publico/instagram/teste.png"
+        fake_url = "https://exemplo.invalid/storage/v1/object/public/redes-publico/instagram/teste.png"
         assert BUCKET == "redes-publico"
         assert GRAPH_BASE.startswith("https://graph.instagram.com/")
         print("MOCK OK — bucket:", BUCKET, "| graph base:", GRAPH_BASE, "| image_url exemplo:", fake_url)

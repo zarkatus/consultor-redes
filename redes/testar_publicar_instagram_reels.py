@@ -43,7 +43,7 @@ def _mockar_comuns(sequencia_status):
     chamadas = {"post": [], "get": 0, "sleep": 0}
     publicar_instagram._token = lambda *a, **k: "token-de-teste"
     publicar_instagram._subir_midia_supabase = lambda caminho, nome, pasta="instagram": (
-        "https://exemplo.supabase.co/storage/v1/object/public/redes-publico/" + pasta + "/" + nome,
+        "https://exemplo.invalid/storage/v1/object/public/redes-publico/" + pasta + "/" + nome,
         pasta + "/" + nome,
     )
 

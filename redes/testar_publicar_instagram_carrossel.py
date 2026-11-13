@@ -51,7 +51,7 @@ def _mockar(status_por_id, publish_respostas=None):
 
     def _upload(caminho, nome, pasta="instagram"):
         est["uploads"].append(nome)
-        return ("https://x.supabase.co/storage/v1/object/public/redes-publico/%s/%s" % (pasta, nome), pasta + "/" + nome)
+        return ("https://x.invalid/storage/v1/object/public/redes-publico/%s/%s" % (pasta, nome), pasta + "/" + nome)
     pi._subir_midia_supabase = _upload
     pi.remover_midia_supabase = lambda remoto: est["removidos"].append(remoto) or True
 
